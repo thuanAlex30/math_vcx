@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 import TutorPage from './pages/TutorPage';
 import HistoryPage from './pages/HistoryPage';
 import DashboardPage from './pages/DashboardPage';
+import EnglishHubPage from './pages/EnglishHubPage';
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/tutor" element={<TutorPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/english" element={<EnglishHubPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
           </Routes>
           <Toaster

@@ -163,10 +163,47 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* English section — additive */}
+      <section className="py-16 lg:py-24 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 dark:from-emerald-950/20 dark:to-slate-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-sm font-bold mb-4">
+                🌍 Mới — Tiếng Anh
+              </span>
+              <h2 className="text-3xl md:text-4xl font-extrabold mb-4">
+                Học Tiếng Anh
+                <span className="block text-emerald-600">như Duolingo + ChatGPT</span>
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+                Từ vựng flashcard, ngữ pháp AI, luyện phát âm microphone, nghe-đọc-viết,
+                hội thoại với giáo viên AI — XP, level, streak và huy hiệu.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/english')}
+                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-lg hover:scale-105 transition"
+              >
+                Vào lớp Tiếng Anh
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {['📚 Từ vựng', '📝 Ngữ pháp', '🎤 Phát âm', '👂 Nghe', '📖 Đọc', '✍️ Viết', '💬 Chat AI', '🏆 XP'].map(
+                (item) => (
+                  <div key={item} className="card p-4 text-sm font-semibold text-center">
+                    {item}
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <h2 className="section-title gradient-text mb-4">Tại sao chọn MathMaster?</h2>
+            <h2 className="section-title gradient-text mb-4">Tại sao chọn GiaSư AI?</h2>
             <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
               Thiết kế cho học sinh THCS, THPT — học mọi lúc, mọi nơi
             </p>
