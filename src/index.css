@@ -83,6 +83,20 @@
   @apply max-w-none text-[15px] leading-relaxed;
 }
 
+/* KaTeX trong lời giải / chat / luyện tập */
+.katex-content .katex {
+  font-size: 1.05em;
+}
+
+.katex-content p {
+  @apply my-2;
+}
+
+.practice-katex .katex,
+.katex-content .katex {
+  color: inherit;
+}
+
 /* Audio waveform bars */
 .audio-bar {
   @apply w-1 rounded-full bg-brand-400 dark:bg-brand-300;

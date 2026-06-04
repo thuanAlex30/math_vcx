@@ -1,19 +1,16 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
-import { scorePronunciation } from '../../services/englishApi';
+import { fetchPronunciationPractice, scorePronunciation } from '../../services/englishApi';
 import { useEnglishStore } from '../../store/englishStore';
+import { useGradeStore, type Grade } from '../../store/gradeStore';
 import EnglishAudioPlayer from './EnglishAudioPlayer';
 import type { PronunciationResult } from '../../types/english';
 
-const SENTENCES = [
-  'Hello, how are you today?',
-  'I love learning English every day.',
-  'The weather is beautiful this morning.',
-  'Can you help me with this exercise?',
-];
-
 const PronunciationModule: React.FC = () => {
+  const { grade } = useGradeStore();
+  const [sentences, setSentences] = useState<string[]>([]);
+  const [description, setDescription] = useState('');
   const [sentenceIdx, setSentenceIdx] = useState(0);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -22,7 +19,17 @@ const PronunciationModule: React.FC = () => {
   const recognitionRef = useRef<{ stop: () => void; start: () => void } | null>(null);
   const { level, updateScores, addXp } = useEnglishStore();
 
-  const expected = SENTENCES[sentenceIdx];
+  useEffect(() => {
+    fetchPronunciationPractice(grade as Grade).then((p) => {
+      setSentences(p.sentences.length ? p.sentences : ['Hello, how are you?']);
+      setDescription(p.description);
+      setSentenceIdx(0);
+      setResult(null);
+      setTranscript('');
+    });
+  }, [grade]);
+
+  const expected = sentences[sentenceIdx] ?? '';
 
   const startListen = () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,7 +45,7 @@ const PronunciationModule: React.FC = () => {
       const text = e.results[0][0].transcript;
       setTranscript(text);
       setListening(false);
-      grade(text);
+      gradeAnswer(text);
     };
     rec.onerror = () => {
       setListening(false);
@@ -57,10 +64,10 @@ const PronunciationModule: React.FC = () => {
     setListening(false);
   };
 
-  const grade = async (spoken: string) => {
+  const gradeAnswer = async (spoken: string) => {
     setLoading(true);
     try {
-      const res = await scorePronunciation(expected, spoken, level);
+      const res = await scorePronunciation(expected, spoken, grade as Grade, level);
       setResult(res);
       updateScores({ pronunciation: res.score });
       addXp(Math.round(res.score / 5));
@@ -71,10 +78,15 @@ const PronunciationModule: React.FC = () => {
     }
   };
 
+  if (!expected) return <p className="text-slate-500">Đang tải...</p>;
+
   return (
     <div className="max-w-xl mx-auto space-y-6">
+      <p className="text-sm text-slate-500 text-center">{description}</p>
       <div className="card p-8 text-center border-2 border-emerald-200/50">
-        <p className="text-xs uppercase tracking-wider text-emerald-600 font-bold mb-2">Đọc câu này</p>
+        <p className="text-xs uppercase tracking-wider text-emerald-600 font-bold mb-2">
+          Lớp {grade} · Đọc câu này
+        </p>
         <p className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">{expected}</p>
         <EnglishAudioPlayer text={expected} />
       </div>
@@ -133,7 +145,7 @@ const PronunciationModule: React.FC = () => {
       )}
 
       <div className="flex justify-center gap-2">
-        {SENTENCES.map((_, i) => (
+        {sentences.map((_, i) => (
           <button
             key={i}
             type="button"

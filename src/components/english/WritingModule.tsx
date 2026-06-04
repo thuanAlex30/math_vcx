@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { PenLine, Loader2 } from 'lucide-react';
-import { checkWriting } from '../../services/englishApi';
+import { checkWriting, fetchEnglishCurriculum } from '../../services/englishApi';
 import { useEnglishStore } from '../../store/englishStore';
+import { useGradeStore, type Grade } from '../../store/gradeStore';
 import type { WritingResult } from '../../types/english';
 
 const WritingModule: React.FC = () => {
+  const { grade } = useGradeStore();
   const [text, setText] = useState('');
   const [result, setResult] = useState<WritingResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [promptHint, setPromptHint] = useState('');
   const { level, updateScores, addXp } = useEnglishStore();
+
+  useEffect(() => {
+    fetchEnglishCurriculum(grade as Grade).then((c) => {
+      setPromptHint(c.writing.promptHint);
+      setText('');
+      setResult(null);
+    });
+  }, [grade]);
 
   const submit = async () => {
     if (!text.trim()) {
@@ -18,7 +29,7 @@ const WritingModule: React.FC = () => {
     }
     setLoading(true);
     try {
-      const res = await checkWriting(text, level);
+      const res = await checkWriting(text, grade as Grade, level);
       setResult(res);
       updateScores({ writing: res.score });
       addXp(res.score / 3);
@@ -32,13 +43,18 @@ const WritingModule: React.FC = () => {
   return (
     <div className="grid lg:grid-cols-2 gap-6">
       <div className="card p-6">
-        <h3 className="font-bold flex items-center gap-2 mb-4">
-          <PenLine className="w-5 h-5 text-emerald-600" /> Bài viết của bạn
+        <h3 className="font-bold flex items-center gap-2 mb-2">
+          <PenLine className="w-5 h-5 text-emerald-600" /> Bài viết · Lớp {grade}
         </h3>
+        {promptHint && (
+          <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40">
+            {promptHint}
+          </p>
+        )}
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Write a paragraph in English about your daily routine..."
+          placeholder="Write in English..."
           className="input-field min-h-[220px] font-serif"
         />
         <button
@@ -91,7 +107,7 @@ const WritingModule: React.FC = () => {
           </>
         ) : (
           <div className="card p-12 text-center text-slate-500">
-            AI sẽ kiểm tra ngữ pháp, từ vựng, chính tả và gợi ý cách viết tự nhiên hơn
+            AI chấm theo yêu cầu viết của lớp {grade}
           </div>
         )}
       </div>

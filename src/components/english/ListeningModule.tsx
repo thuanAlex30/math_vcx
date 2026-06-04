@@ -3,14 +3,18 @@ import toast from 'react-hot-toast';
 import { Headphones, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { generateListening, gradeListening } from '../../services/englishApi';
 import { useEnglishStore } from '../../store/englishStore';
+import { useGradeStore, type Grade } from '../../store/gradeStore';
 import EnglishAudioPlayer from './EnglishAudioPlayer';
 import type { ListeningQuestion } from '../../types/english';
 
 const ListeningModule: React.FC = () => {
+  const { grade } = useGradeStore();
   const [lesson, setLesson] = useState<{
     title: string;
     audioScript: string;
     questions: ListeningQuestion[];
+    playbackSpeed?: number;
+    durationSec?: number;
   } | null>(null);
   const [answers, setAnswers] = useState<number[]>([]);
   const [graded, setGraded] = useState<{
@@ -25,7 +29,7 @@ const ListeningModule: React.FC = () => {
     setGraded(null);
     setAnswers([]);
     try {
-      const data = await generateListening(level, 'dialogue');
+      const data = await generateListening(grade as Grade, undefined, level);
       setLesson(data);
     } catch {
       toast.error('Không tạo được bài nghe');
@@ -46,8 +50,15 @@ const ListeningModule: React.FC = () => {
     }
   };
 
+  const playbackSpeed = lesson?.playbackSpeed ?? 1;
+
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
+      <p className="text-sm text-slate-500 text-center">
+        Lớp {grade}
+        {lesson?.durationSec ? ` · ~${lesson.durationSec}s` : ''}
+        {lesson?.playbackSpeed ? ` · Tốc độ ${playbackSpeed}x` : ''}
+      </p>
       <button type="button" onClick={generate} disabled={loading} className="btn-primary w-full bg-emerald-600 hover:from-emerald-600">
         {loading ? <Loader2 className="animate-spin mx-auto" /> : 'Tạo bài luyện nghe mới'}
       </button>
@@ -58,7 +69,7 @@ const ListeningModule: React.FC = () => {
             <Headphones className="w-5 h-5" />
             {lesson.title}
           </div>
-          <EnglishAudioPlayer text={lesson.audioScript} />
+          <EnglishAudioPlayer text={lesson.audioScript} speed={playbackSpeed} />
           <p className="text-sm text-slate-500 italic border-l-4 border-emerald-400 pl-3">
             {lesson.audioScript}
           </p>

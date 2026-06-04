@@ -1,9 +1,12 @@
 import axios from 'axios';
 import type {
   ChatRole,
+  EnglishCurriculum,
+  EnglishGrade,
   EnglishLevel,
   GrammarTopic,
   ListeningQuestion,
+  PronunciationPractice,
   PronunciationResult,
   VocabTopic,
   WritingResult,
@@ -16,56 +19,97 @@ const client = axios.create({
   timeout: 120000,
 });
 
-export const fetchVocabTopics = async () => {
-  const { data } = await client.get<{ topics: { id: string; label: string; emoji: string; wordCount: number }[] }>(
-    '/english/topics/vocabulary'
+export const fetchEnglishCurriculum = async (grade: EnglishGrade) => {
+  const { data } = await client.get<EnglishCurriculum>('/english/curriculum', {
+    params: { grade },
+  });
+  return data;
+};
+
+export const fetchVocabTopics = async (grade: EnglishGrade) => {
+  const { data } = await client.get<{
+    grade: number;
+    topics: { id: string; label: string; emoji: string; wordCount: number }[];
+  }>('/english/topics/vocabulary', { params: { grade } });
+  return data.topics;
+};
+
+export const fetchVocabulary = async (topicId: string, grade: EnglishGrade) => {
+  const { data } = await client.get<VocabTopic>(`/english/vocabulary/${topicId}`, {
+    params: { grade },
+  });
+  return data;
+};
+
+export const expandVocabulary = async (
+  topicId: string,
+  grade: EnglishGrade,
+  exclude: string[],
+  count = 12
+) => {
+  const { data } = await client.post<{ words: VocabTopic['words']; source: string }>(
+    `/english/vocabulary/${topicId}/expand`,
+    { grade, exclude, count }
+  );
+  return data;
+};
+
+export const fetchGrammarTopics = async (grade: EnglishGrade) => {
+  const { data } = await client.get<{ grade: number; topics: GrammarTopic[] }>(
+    '/english/topics/grammar',
+    { params: { grade } }
   );
   return data.topics;
 };
 
-export const fetchVocabulary = async (topicId: string) => {
-  const { data } = await client.get<VocabTopic>(`/english/vocabulary/${topicId}`);
+export const fetchPronunciationPractice = async (grade: EnglishGrade) => {
+  const { data } = await client.get<PronunciationPractice>('/english/pronunciation/practice', {
+    params: { grade },
+  });
   return data;
 };
 
-export const fetchGrammarTopics = async () => {
-  const { data } = await client.get<{ topics: GrammarTopic[] }>('/english/topics/grammar');
-  return data.topics;
-};
-
-export const explainGrammar = async (topicId: string, level: EnglishLevel) => {
+export const explainGrammar = async (topicId: string, grade: EnglishGrade, level?: EnglishLevel) => {
   const { data } = await client.post<{ topic: GrammarTopic; explanation: string }>(
     '/english/grammar/explain',
-    { topicId, level }
+    { topicId, grade, level }
   );
   return data;
 };
 
-export const checkWriting = async (text: string, level: EnglishLevel) => {
-  const { data } = await client.post<WritingResult>('/english/writing/check', { text, level });
+export const checkWriting = async (text: string, grade: EnglishGrade, level?: EnglishLevel) => {
+  const { data } = await client.post<WritingResult>('/english/writing/check', { text, grade, level });
   return data;
 };
 
 export const scorePronunciation = async (
   expected: string,
   spoken: string,
-  level: EnglishLevel
+  grade: EnglishGrade,
+  level?: EnglishLevel
 ) => {
   const { data } = await client.post<PronunciationResult>('/english/pronunciation/score', {
     expected,
     spoken,
+    grade,
     level,
   });
   return data;
 };
 
-export const generateListening = async (level: EnglishLevel, type = 'dialogue') => {
+export const generateListening = async (
+  grade: EnglishGrade,
+  topicId?: string,
+  level?: EnglishLevel
+) => {
   const { data } = await client.post<{
     title: string;
     type: string;
     audioScript: string;
     questions: ListeningQuestion[];
-  }>('/english/listening/generate', { level, type });
+    playbackSpeed?: number;
+    durationSec?: number;
+  }>('/english/listening/generate', { grade, topicId, level });
   return data;
 };
 
@@ -79,24 +123,28 @@ export const gradeListening = async (questions: ListeningQuestion[], answers: nu
   return data;
 };
 
-export const generateReading = async (level: EnglishLevel) => {
+export const generateReading = async (grade: EnglishGrade, level?: EnglishLevel) => {
   const { data } = await client.post<{
     title: string;
     passage: string;
     questions: ListeningQuestion[];
-  }>('/english/reading/generate', { level });
+    targetLength?: number;
+    newWordsPercent?: number;
+  }>('/english/reading/generate', { grade, level });
   return data;
 };
 
 export const englishChat = async (
   messages: ChatMessage[],
-  level: EnglishLevel,
-  role: ChatRole
+  grade: EnglishGrade,
+  role: ChatRole,
+  level?: EnglishLevel
 ) => {
   const { data } = await client.post<{ reply: string }>('/english/chat', {
     messages,
-    level,
+    grade,
     role,
+    level,
   });
   return data;
 };

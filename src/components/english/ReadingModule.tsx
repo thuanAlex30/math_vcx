@@ -3,14 +3,18 @@ import toast from 'react-hot-toast';
 import { BookOpen, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { generateReading } from '../../services/englishApi';
 import { useEnglishStore } from '../../store/englishStore';
+import { useGradeStore, type Grade } from '../../store/gradeStore';
 import EnglishAudioPlayer from './EnglishAudioPlayer';
 import type { ListeningQuestion } from '../../types/english';
 
 const ReadingModule: React.FC = () => {
+  const { grade } = useGradeStore();
   const [lesson, setLesson] = useState<{
     title: string;
     passage: string;
     questions: ListeningQuestion[];
+    targetLength?: number;
+    newWordsPercent?: number;
   } | null>(null);
   const [answers, setAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -22,7 +26,7 @@ const ReadingModule: React.FC = () => {
     setShowResults(false);
     setAnswers([]);
     try {
-      setLesson(await generateReading(level));
+      setLesson(await generateReading(grade as Grade, level));
     } catch {
       toast.error('Không tạo được bài đọc');
     } finally {
@@ -43,6 +47,11 @@ const ReadingModule: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
+      <p className="text-sm text-slate-500 text-center">
+        Lớp {grade}
+        {lesson?.targetLength ? ` · ~${lesson.targetLength} từ` : ''}
+        {lesson?.newWordsPercent != null ? ` · Từ mới ≤${lesson.newWordsPercent}%` : ''}
+      </p>
       <button type="button" onClick={generate} disabled={loading} className="btn-primary w-full bg-emerald-600">
         {loading ? <Loader2 className="animate-spin mx-auto" /> : 'Tạo bài đọc hiểu mới'}
       </button>

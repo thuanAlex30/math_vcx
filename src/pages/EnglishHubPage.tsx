@@ -21,6 +21,8 @@ import ReadingModule from '../components/english/ReadingModule';
 import WritingModule from '../components/english/WritingModule';
 import EnglishChatModule from '../components/english/EnglishChatModule';
 import type { EnglishSkill } from '../types/english';
+import GradeSubjectSelector from '../components/GradeSubjectSelector';
+import { useGradeStore } from '../store/gradeStore';
 
 const SKILLS: { id: EnglishSkill; label: string; icon: typeof BookOpen; color: string }[] = [
   { id: 'vocabulary', label: 'Từ vựng', icon: BookOpen, color: 'from-violet-500 to-purple-600' },
@@ -34,18 +36,20 @@ const SKILLS: { id: EnglishSkill; label: string; icon: typeof BookOpen; color: s
 
 const EnglishHubPage: React.FC = () => {
   const [skill, setSkill] = useState<EnglishSkill>('vocabulary');
+  const { grade } = useGradeStore();
   const { xp, streak, badges, wordsLearned } = useEnglishStore();
   const level = levelFromXp(xp);
 
   const renderModule = () => {
+    const key = `${skill}-${grade}`;
     switch (skill) {
-      case 'vocabulary': return <VocabModule />;
-      case 'grammar': return <GrammarModule />;
-      case 'pronunciation': return <PronunciationModule />;
-      case 'listening': return <ListeningModule />;
-      case 'reading': return <ReadingModule />;
-      case 'writing': return <WritingModule />;
-      case 'chat': return <EnglishChatModule />;
+      case 'vocabulary': return <VocabModule key={key} />;
+      case 'grammar': return <GrammarModule key={key} />;
+      case 'pronunciation': return <PronunciationModule key={key} />;
+      case 'listening': return <ListeningModule key={key} />;
+      case 'reading': return <ReadingModule key={key} />;
+      case 'writing': return <WritingModule key={key} />;
+      case 'chat': return <EnglishChatModule key={key} />;
       default: return null;
     }
   };
@@ -65,6 +69,9 @@ const EnglishHubPage: React.FC = () => {
               <p className="text-slate-600 dark:text-slate-400 mt-2 ml-14">
                 Duolingo × ChatGPT — AI giáo viên 24/7
               </p>
+              <div className="mt-4 ml-0 sm:ml-14">
+                <GradeSubjectSelector showSubject={false} />
+              </div>
             </div>
             <div className="flex flex-wrap gap-3">
               <div className="card px-4 py-2 flex items-center gap-2">

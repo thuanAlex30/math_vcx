@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { englishChat } from '../../services/englishApi';
+import { englishChat, fetchEnglishCurriculum } from '../../services/englishApi';
 import { useEnglishStore } from '../../store/englishStore';
+import { useGradeStore, type Grade } from '../../store/gradeStore';
 import MathMarkdown from '../MathMarkdown';
 import type { ChatMessage } from '../../types';
 import type { ChatRole } from '../../types/english';
@@ -15,11 +16,20 @@ const ROLES: { id: ChatRole; label: string; emoji: string }[] = [
 ];
 
 const EnglishChatModule: React.FC = () => {
+  const { grade } = useGradeStore();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [topicHint, setTopicHint] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
-  const { level, chatRole, setChatRole, setLevel, addXp } = useEnglishStore();
+  const { level, chatRole, setChatRole, addXp } = useEnglishStore();
+
+  useEffect(() => {
+    fetchEnglishCurriculum(grade as Grade).then((c) => {
+      setTopicHint(c.conversation.topicHint);
+      setMessages([]);
+    });
+  }, [grade]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,7 +44,7 @@ const EnglishChatModule: React.FC = () => {
     setInput('');
     setLoading(true);
     try {
-      const { reply } = await englishChat(next, level, chatRole);
+      const { reply } = await englishChat(next, grade as Grade, chatRole, level);
       setMessages([...next, { role: 'assistant', content: reply }]);
       addXp(10);
     } catch {
@@ -46,21 +56,13 @@ const EnglishChatModule: React.FC = () => {
 
   return (
     <div className="card flex flex-col min-h-[520px]">
-      <div className="p-4 border-b border-slate-200/80 dark:border-slate-700 flex flex-wrap gap-3">
-        <div className="flex gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800">
-          {(['beginner', 'intermediate', 'advanced'] as const).map((l) => (
-            <button
-              key={l}
-              type="button"
-              onClick={() => setLevel(l)}
-              className={`px-3 py-1 rounded-lg text-xs font-bold capitalize ${
-                level === l ? 'bg-white dark:bg-slate-900 shadow' : ''
-              }`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
+      <div className="p-4 border-b border-slate-200/80 dark:border-slate-700 flex flex-wrap gap-3 items-center">
+        <span className="px-3 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 text-xs font-bold">
+          Lớp {grade}
+        </span>
+        {topicHint && (
+          <p className="text-xs text-slate-500 flex-1 min-w-[200px]">{topicHint}</p>
+        )}
         <div className="flex flex-wrap gap-2">
           {ROLES.map((r) => (
             <button
@@ -78,7 +80,7 @@ const EnglishChatModule: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <p className="text-center text-slate-500 py-12">
-            Start chatting in English! AI will help you improve.
+            Bắt đầu hội thoại bằng tiếng Anh — AI điều chỉnh theo lớp {grade}.
           </p>
         )}
         {messages.map((m, i) => (
@@ -97,7 +99,7 @@ const EnglishChatModule: React.FC = () => {
         ))}
         {loading && (
           <div className="flex gap-2 text-slate-500 text-sm">
-            <Loader2 className="w-4 h-4 animate-spin" /> Thinking...
+            <Loader2 className="w-4 h-4 animate-spin" /> Đang trả lời...
           </div>
         )}
         <div ref={endRef} />
@@ -108,7 +110,7 @@ const EnglishChatModule: React.FC = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
-          placeholder="Type in English..."
+          placeholder="Nhập tiếng Anh..."
           className="input-field flex-1"
         />
         <button type="button" onClick={send} disabled={loading} className="px-5 rounded-2xl bg-emerald-600 text-white">

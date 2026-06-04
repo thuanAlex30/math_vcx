@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Brain, Gauge, User, Mic2, LayoutGrid, MessageCircle } from 'lucide-react';
+import { Brain, Gauge, User, Mic2, LayoutGrid, MessageCircle, ClipboardList } from 'lucide-react';
 import ProblemInput from '../components/ProblemInput';
+import PracticeMode from '../components/PracticeMode';
+import GradeSubjectSelector from '../components/GradeSubjectSelector';
 import SolutionSteps from '../components/SolutionSteps';
 import VisualizationPanel from '../components/VisualizationPanel';
 import ChatPanel from '../components/ChatPanel';
@@ -32,8 +34,16 @@ function parseStepsFromText(text: string): SolutionStep[] {
 }
 
 type Tab = 'solution' | 'graph' | 'chat';
+type TutorMode = 'solve' | 'practice';
 
 const STUDENT_SESSION_KEY = 'mathmaster-student-session';
+const TUTOR_MODE_KEY = 'giasu-tutor-mode';
+
+function getInitialMode(): TutorMode {
+  if (typeof window === 'undefined') return 'solve';
+  const saved = localStorage.getItem(TUTOR_MODE_KEY);
+  return saved === 'practice' ? 'practice' : 'solve';
+}
 
 /** Session ID ổn định trên trình duyệt — dùng cho Graph RAG profile backend */
 function getStudentSessionId(): string {
@@ -73,6 +83,12 @@ const TutorPage: React.FC = () => {
   const { recordSolve } = useDashboardStore();
   const [chatLoading, setChatLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('solution');
+  const [mode, setMode] = useState<TutorMode>(getInitialMode);
+
+  const switchMode = (next: TutorMode) => {
+    setMode(next);
+    localStorage.setItem(TUTOR_MODE_KEY, next);
+  };
 
   const handleSolve = async () => {
     if (!question.trim() && !image) {
@@ -184,12 +200,47 @@ const TutorPage: React.FC = () => {
             Phòng học AI
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-2 ml-14 max-w-xl">
-            Nhập đề bên trái · Xem lời giải, đồ thị và nghe giọng gia sư bên phải
+            {mode === 'solve'
+              ? 'Nhập đề bên trái · Xem lời giải, đồ thị và nghe giọng gia sư bên phải'
+              : 'Chọn lớp, chủ đề · Làm 5 câu trắc nghiệm do AI sinh'}
           </p>
+
+          <div className="flex gap-2 p-1.5 rounded-2xl glass-card mt-6 ml-0 sm:ml-14 max-w-md">
+            <button
+              type="button"
+              onClick={() => switchMode('solve')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition ${
+                mode === 'solve'
+                  ? 'bg-brand-600 text-white shadow-md'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Brain className="w-4 h-4" />
+              Gia sư AI
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode('practice')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition ${
+                mode === 'practice'
+                  ? 'bg-brand-600 text-white shadow-md'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <ClipboardList className="w-4 h-4" />
+              Luyện tập
+            </button>
+          </div>
         </motion.header>
 
+        {mode === 'practice' ? (
+          <PracticeMode />
+        ) : (
         <div className="grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-6 lg:gap-8">
           <div className="space-y-6">
+            <div className="card p-4">
+              <GradeSubjectSelector showSubject={false} />
+            </div>
             <ProblemInput
               question={question}
               image={image}
@@ -340,6 +391,7 @@ const TutorPage: React.FC = () => {
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
   );

@@ -80,3 +80,50 @@ export const checkHealth = async () => {
   const response = await client.get('/health');
   return response.data;
 };
+
+export type PracticeSubject = 'math' | 'english';
+
+export interface CurriculumTopic {
+  id: string;
+  label: string;
+}
+
+export interface PracticeQuestion {
+  id?: number;
+  question: string;
+  options: string[];
+  correct: number;
+  explanation: string;
+}
+
+export interface GenerateQuestionsResult {
+  grade: number;
+  subject: PracticeSubject;
+  topic: string;
+  questions: PracticeQuestion[];
+  source: 'ai' | 'fallback';
+  demo?: boolean;
+  warning?: string;
+}
+
+export const fetchTopics = async (subject: PracticeSubject, grade: number) => {
+  const response = await client.get<{
+    subject: PracticeSubject;
+    grade: number;
+    topics: CurriculumTopic[];
+  }>('/topics', { params: { subject, grade } });
+  return response.data;
+};
+
+export const generatePracticeQuestions = async (data: {
+  grade: number;
+  subject: PracticeSubject;
+  topic: string;
+  numberOfQuestions?: number;
+}) => {
+  const response = await client.post<GenerateQuestionsResult>(
+    '/generate-questions',
+    data
+  );
+  return response.data;
+};
