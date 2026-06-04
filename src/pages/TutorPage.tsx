@@ -33,6 +33,18 @@ function parseStepsFromText(text: string): SolutionStep[] {
 
 type Tab = 'solution' | 'graph' | 'chat';
 
+const STUDENT_SESSION_KEY = 'mathmaster-student-session';
+
+/** Session ID ổn định trên trình duyệt — dùng cho Graph RAG profile backend */
+function getStudentSessionId(): string {
+  let id = localStorage.getItem(STUDENT_SESSION_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(STUDENT_SESSION_KEY, id);
+  }
+  return id;
+}
+
 const TutorPage: React.FC = () => {
   const {
     question,
@@ -76,7 +88,11 @@ const TutorPage: React.FC = () => {
     try {
       let streamDone = false;
       await solveMathStream(
-        { question, image: image || undefined },
+        {
+          question,
+          image: image || undefined,
+          studentSessionId: getStudentSessionId(),
+        },
         (token) => appendSolution(token),
         (payload) => {
           streamDone = true;

@@ -14,7 +14,7 @@ export const solveMath = async (data: {
 };
 
 export const solveMathStream = async (
-  data: { question: string; image?: string },
+  data: { question: string; image?: string; studentSessionId?: string },
   onToken: (token: string) => void,
   onDone?: (payload: SolveResult & { done: true }) => void
 ): Promise<void> => {
