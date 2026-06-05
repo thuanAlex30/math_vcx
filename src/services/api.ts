@@ -4,7 +4,11 @@ import type { PreferredStyle, LearningGoal } from '../store/onboardingStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
-const client = axios.create({ baseURL: API_BASE_URL, timeout: 120000 });
+const client = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 120000,
+  withCredentials: true,
+});
 
 export interface StudentContext {
   name?: string;
