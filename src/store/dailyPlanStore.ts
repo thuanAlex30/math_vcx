@@ -17,11 +17,13 @@ interface DailyPlanStore {
   date: string | null;
   tasks: DailyTask[];
   streakRescueUsedWeek: string | null;
+  streakRescuePending: boolean;
   setPlan: (date: string, tasks: DailyTask[]) => void;
   completeTask: (taskId: string) => void;
   pendingCount: () => number;
   canUseStreakRescue: () => boolean;
   useStreakRescue: () => void;
+  clearStreakRescuePending: () => void;
 }
 
 function weekKey() {
@@ -37,6 +39,7 @@ export const useDailyPlanStore = create<DailyPlanStore>()(
       date: null,
       tasks: [],
       streakRescueUsedWeek: null,
+      streakRescuePending: false,
       setPlan: (date, tasks) => set({ date, tasks }),
       completeTask: (taskId) =>
         set({
@@ -46,7 +49,9 @@ export const useDailyPlanStore = create<DailyPlanStore>()(
         }),
       pendingCount: () => get().tasks.filter((t) => !t.completed).length,
       canUseStreakRescue: () => get().streakRescueUsedWeek !== weekKey(),
-      useStreakRescue: () => set({ streakRescueUsedWeek: weekKey() }),
+      useStreakRescue: () =>
+        set({ streakRescueUsedWeek: weekKey(), streakRescuePending: true }),
+      clearStreakRescuePending: () => set({ streakRescuePending: false }),
     }),
     { name: 'giasu-daily-plan' }
   )

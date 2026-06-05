@@ -9,8 +9,12 @@ export interface Badge {
   unlocked: boolean;
 }
 
+export type AdaptiveSuggestion = 'up' | 'down' | null;
+
 interface EnglishStore {
   level: EnglishLevel;
+  adaptiveLevel: EnglishLevel | null;
+  recentScores: number[];
   chatRole: ChatRole;
   xp: number;
   streak: number;
@@ -23,12 +27,23 @@ interface EnglishStore {
   weeklyProgress: number[];
   badges: Badge[];
   setLevel: (l: EnglishLevel) => void;
+  setAdaptiveLevel: (l: EnglishLevel | null) => void;
   setChatRole: (r: ChatRole) => void;
   addXp: (amount: number) => void;
   recordWordLearned: () => void;
   recordStudyMinutes: (mins: number) => void;
   updateScores: (scores: Partial<{ pronunciation: number; listening: number; writing: number }>) => void;
+  recordAdaptiveScore: (score: number) => AdaptiveSuggestion;
+  effectiveLevel: () => EnglishLevel;
   checkStreak: () => void;
+}
+
+function computeAdaptiveSuggestion(scores: number[], level: EnglishLevel): AdaptiveSuggestion {
+  if (scores.length < 3) return null;
+  const last3 = scores.slice(-3);
+  if (last3.every((s) => s >= 80)) return 'up';
+  if (last3.every((s) => s < 50)) return 'down';
+  return null;
 }
 
 const DEFAULT_BADGES: Badge[] = [
@@ -50,6 +65,8 @@ export const useEnglishStore = create<EnglishStore>()(
   persist(
     (set, get) => ({
       level: 'beginner',
+      adaptiveLevel: null,
+      recentScores: [],
       chatRole: 'teacher',
       xp: 0,
       streak: 0,
@@ -62,6 +79,16 @@ export const useEnglishStore = create<EnglishStore>()(
       weeklyProgress: [0, 0, 0, 0, 0, 0, 0],
       badges: DEFAULT_BADGES,
       setLevel: (level) => set({ level }),
+      setAdaptiveLevel: (adaptiveLevel) => set({ adaptiveLevel }),
+      effectiveLevel: () => get().adaptiveLevel || get().level,
+      recordAdaptiveScore: (score) => {
+        const state = get();
+        const recentScores = [...state.recentScores, score].slice(-10);
+        const current = state.adaptiveLevel || state.level;
+        const suggestion = computeAdaptiveSuggestion(recentScores, current);
+        set({ recentScores });
+        return suggestion;
+      },
       setChatRole: (chatRole) => set({ chatRole }),
       addXp: (amount) => {
         const state = get();

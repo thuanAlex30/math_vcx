@@ -12,7 +12,9 @@ const WritingModule: React.FC = () => {
   const [result, setResult] = useState<WritingResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [promptHint, setPromptHint] = useState('');
-  const { level, updateScores, addXp } = useEnglishStore();
+  const { effectiveLevel, recordAdaptiveScore, setAdaptiveLevel, updateScores, addXp } =
+    useEnglishStore();
+  const level = effectiveLevel();
 
   useEffect(() => {
     fetchEnglishCurriculum(grade as Grade).then((c) => {
@@ -33,6 +35,18 @@ const WritingModule: React.FC = () => {
       setResult(res);
       updateScores({ writing: res.score });
       addXp(res.score / 3);
+      const suggestion = recordAdaptiveScore(res.score);
+      if (suggestion === 'up') {
+        const next = level === 'beginner' ? 'intermediate' : 'advanced';
+        if (window.confirm(`Em viết tốt! Chuyển sang mức ${next}?`)) {
+          setAdaptiveLevel(next);
+        }
+      } else if (suggestion === 'down') {
+        const prev = level === 'advanced' ? 'intermediate' : 'beginner';
+        if (window.confirm(`Thử ôn mức ${prev} để củng cố nền tảng?`)) {
+          setAdaptiveLevel(prev);
+        }
+      }
     } catch {
       toast.error('Không kiểm tra được bài viết');
     } finally {

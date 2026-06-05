@@ -25,6 +25,8 @@ import {
   type PracticeSubject,
 } from '../services/api';
 import { useMathGamificationStore } from '../store/mathGamificationStore';
+import { useDailyPlanStore } from '../store/dailyPlanStore';
+import { useDashboardStore } from '../store/dashboardStore';
 
 const PRACTICE_STORAGE_KEY = 'giasu-practice-session';
 
@@ -79,6 +81,8 @@ const PracticeMode: React.FC<{ initialTopic?: string }> = ({ initialTopic }) => 
   const topicLabel = topics.find((t) => t.id === topicId)?.label || topicId;
 
   const { recordPracticePerfect, recordTopicCorrect } = useMathGamificationStore();
+  const { streakRescuePending, clearStreakRescuePending } = useDailyPlanStore();
+  const { restoreStreak } = useDashboardStore();
 
   useEffect(() => {
     if (initialTopic) setTopicId(initialTopic);
@@ -219,6 +223,11 @@ const PracticeMode: React.FC<{ initialTopic?: string }> = ({ initialTopic }) => 
       questions.forEach((q, i) => {
         if (answers[i] === q.correct) recordTopicCorrect(topicId);
       });
+      if (streakRescuePending && correct > 0) {
+        restoreStreak();
+        clearStreakRescuePending();
+        toast.success('Đã cứu chuỗi học tập! 🔥');
+      }
     }
   };
 

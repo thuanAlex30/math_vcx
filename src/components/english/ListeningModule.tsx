@@ -22,7 +22,9 @@ const ListeningModule: React.FC = () => {
     results: (ListeningQuestion & { userAnswer: number; isCorrect: boolean })[];
   } | null>(null);
   const [loading, setLoading] = useState(false);
-  const { level, updateScores, addXp } = useEnglishStore();
+  const { effectiveLevel, recordAdaptiveScore, setAdaptiveLevel, updateScores, addXp } =
+    useEnglishStore();
+  const level = effectiveLevel();
 
   const generate = async () => {
     setLoading(true);
@@ -45,6 +47,23 @@ const ListeningModule: React.FC = () => {
       setGraded(res);
       updateScores({ listening: res.score });
       addXp(res.score / 2);
+      const suggestion = recordAdaptiveScore(res.score);
+      if (suggestion === 'up') {
+        const next = level === 'beginner' ? 'intermediate' : 'advanced';
+        toast('Thử mức khó hơn nhé!', {
+          icon: '🚀',
+          duration: 5000,
+        });
+        if (window.confirm(`Em làm tốt 3 lần liên tiếp! Chuyển sang mức ${next}?`)) {
+          setAdaptiveLevel(next);
+        }
+      } else if (suggestion === 'down') {
+        const prev = level === 'advanced' ? 'intermediate' : 'beginner';
+        toast('Ôn lại mức dễ hơn sẽ giúp em vững hơn', { icon: '📘' });
+        if (window.confirm(`Điểm thấp 3 lần — thử mức ${prev}?`)) {
+          setAdaptiveLevel(prev);
+        }
+      }
     } catch {
       toast.error('Không chấm được');
     }

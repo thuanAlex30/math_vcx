@@ -62,8 +62,17 @@ export interface EnglishCurriculum {
   conversation: { turns: number; topicHint: string };
 }
 
+export interface PronunciationUnit {
+  id: string;
+  title: string;
+  sentences: string[];
+}
+
 export interface PronunciationPractice {
   grade: number;
+  units: PronunciationUnit[];
+  unitId?: string;
+  unitTitle?: string;
   content: string;
   description: string;
   exercises: string[];

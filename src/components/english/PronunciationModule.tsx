@@ -5,10 +5,13 @@ import { fetchPronunciationPractice, scorePronunciation } from '../../services/e
 import { useEnglishStore } from '../../store/englishStore';
 import { useGradeStore, type Grade } from '../../store/gradeStore';
 import EnglishAudioPlayer from './EnglishAudioPlayer';
-import type { PronunciationResult } from '../../types/english';
+import type { PronunciationResult, PronunciationUnit } from '../../types/english';
 
 const PronunciationModule: React.FC = () => {
   const { grade } = useGradeStore();
+  const [units, setUnits] = useState<PronunciationUnit[]>([]);
+  const [unitId, setUnitId] = useState('');
+  const [unitTitle, setUnitTitle] = useState('');
   const [sentences, setSentences] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [sentenceIdx, setSentenceIdx] = useState(0);
@@ -17,17 +20,27 @@ const PronunciationModule: React.FC = () => {
   const [result, setResult] = useState<PronunciationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const recognitionRef = useRef<{ stop: () => void; start: () => void } | null>(null);
-  const { level, updateScores, addXp } = useEnglishStore();
+  const { effectiveLevel, addXp, updateScores } = useEnglishStore();
+  const level = effectiveLevel();
 
   useEffect(() => {
-    fetchPronunciationPractice(grade as Grade).then((p) => {
+    setUnitId('');
+  }, [grade]);
+
+  useEffect(() => {
+    fetchPronunciationPractice(grade as Grade, unitId || undefined).then((p) => {
+      setUnits(p.units || []);
+      if (!unitId) {
+        setUnitId(p.unitId || p.units?.[0]?.id || '');
+      }
+      setUnitTitle(p.unitTitle || p.units?.[0]?.title || '');
       setSentences(p.sentences.length ? p.sentences : ['Hello, how are you?']);
       setDescription(p.description);
       setSentenceIdx(0);
       setResult(null);
       setTranscript('');
     });
-  }, [grade]);
+  }, [grade, unitId]);
 
   const expected = sentences[sentenceIdx] ?? '';
 
@@ -82,10 +95,28 @@ const PronunciationModule: React.FC = () => {
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
+      {units.length > 1 && (
+        <div className="flex flex-wrap gap-2 justify-center">
+          {units.map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => {
+                setUnitId(u.id);
+                setUnitTitle(u.title);
+              }}
+              className={`chip text-xs ${unitId === u.id ? 'ring-2 ring-emerald-500' : ''}`}
+            >
+              {u.title}
+            </button>
+          ))}
+        </div>
+      )}
+
       <p className="text-sm text-slate-500 text-center">{description}</p>
       <div className="card p-8 text-center border-2 border-emerald-200/50">
         <p className="text-xs uppercase tracking-wider text-emerald-600 font-bold mb-2">
-          Lớp {grade} · Đọc câu này
+          Lớp {grade} · {unitTitle || 'Phát âm'}
         </p>
         <p className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">{expected}</p>
         <EnglishAudioPlayer text={expected} />
@@ -151,6 +182,7 @@ const PronunciationModule: React.FC = () => {
             type="button"
             onClick={() => { setSentenceIdx(i); setResult(null); setTranscript(''); }}
             className={`w-3 h-3 rounded-full ${i === sentenceIdx ? 'bg-emerald-500' : 'bg-slate-300'}`}
+            aria-label={`Câu ${i + 1}`}
           />
         ))}
       </div>

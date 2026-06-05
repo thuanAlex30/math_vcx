@@ -62,9 +62,12 @@ export const fetchGrammarTopics = async (grade: EnglishGrade) => {
   return data.topics;
 };
 
-export const fetchPronunciationPractice = async (grade: EnglishGrade) => {
+export const fetchPronunciationPractice = async (
+  grade: EnglishGrade,
+  unitId?: string
+) => {
   const { data } = await client.get<PronunciationPractice>('/english/pronunciation/practice', {
-    params: { grade },
+    params: { grade, unitId },
   });
   return data;
 };

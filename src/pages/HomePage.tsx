@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -12,9 +12,45 @@ import {
   Users,
   Star,
 } from 'lucide-react';
+import DailyPlanCard from '../components/profile/DailyPlanCard';
+import { useOnboardingStore } from '../store/onboardingStore';
+import { useDailyPlanStore } from '../store/dailyPlanStore';
+import { useGradeStore } from '../store/gradeStore';
+import { useLearningStyleStore } from '../store/learningStyleStore';
+import {
+  fetchDailyPlan,
+  completeDailyTask,
+  getStudentSessionId,
+} from '../services/api';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const { completed } = useOnboardingStore();
+  const { grade } = useGradeStore();
+  const { preferredFormat } = useLearningStyleStore();
+  const { tasks, setPlan, completeTask, pendingCount } = useDailyPlanStore();
+  const [planLoading, setPlanLoading] = useState(false);
+  const sessionId = getStudentSessionId();
+
+  useEffect(() => {
+    if (!completed) return;
+    setPlanLoading(true);
+    fetchDailyPlan(sessionId, grade, preferredFormat || undefined)
+      .then((plan) => setPlan(plan.date, plan.tasks))
+      .catch(() => {})
+      .finally(() => setPlanLoading(false));
+  }, [completed, sessionId, grade, preferredFormat, setPlan]);
+
+  const handleCompleteTask = async (taskId: string) => {
+    completeTask(taskId);
+    try {
+      await completeDailyTask(sessionId, taskId);
+    } catch {
+      /* local state đã cập nhật */
+    }
+  };
+
+  const showDailyPlan = completed && pendingCount() > 0;
 
   const features = [
     {
@@ -51,6 +87,19 @@ const HomePage = () => {
 
   return (
     <div className="pt-16">
+      {showDailyPlan && (
+        <section className="py-8 bg-gradient-to-b from-brand-50/80 to-transparent dark:from-brand-950/30">
+          <div className="max-w-3xl mx-auto px-4">
+            <DailyPlanCard
+              tasks={tasks}
+              loading={planLoading}
+              onComplete={handleCompleteTask}
+              compact
+            />
+          </div>
+        </section>
+      )}
+
       <section className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-28">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">

@@ -31,6 +31,8 @@ import SubjectSwitcher from '../components/SubjectSwitcher';
 import KnowledgeMap from '../components/profile/KnowledgeMap';
 import DailyPlanCard from '../components/profile/DailyPlanCard';
 import WeakTopicsPanel from '../components/profile/WeakTopicsPanel';
+import StreakRescueModal, { hasMissedStudyDay } from '../components/profile/StreakRescueModal';
+import ExamAnalyzePanel from '../components/profile/ExamAnalyzePanel';
 import MathBadges from '../components/gamification/MathBadges';
 import LearningPreferences from '../components/settings/LearningPreferences';
 import {
@@ -50,10 +52,11 @@ const DashboardPage: React.FC = () => {
   const [tab, setTab] = useState<DashTab>('all');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [planLoading, setPlanLoading] = useState(true);
+  const [showRescue, setShowRescue] = useState(false);
 
   const { grade } = useGradeStore();
   const { name } = useOnboardingStore();
-  const { totalSolved, topics, streak } = useDashboardStore();
+  const { totalSolved, topics, streak, lastStudyDate } = useDashboardStore();
   const { history } = useHistoryStore();
   const { syncStreakBadges } = useMathGamificationStore();
   const { preferredFormat } = useLearningStyleStore();
@@ -65,7 +68,7 @@ const DashboardPage: React.FC = () => {
     setKnowledgeMap,
     setLoading,
   } = useStudentProfileStore();
-  const { tasks, setPlan, completeTask } = useDailyPlanStore();
+  const { tasks, setPlan, completeTask, canUseStreakRescue, useStreakRescue } = useDailyPlanStore();
 
   const {
     xp,
@@ -84,6 +87,16 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     syncStreakBadges(streak);
   }, [streak, syncStreakBadges]);
+
+  useEffect(() => {
+    if (
+      hasMissedStudyDay(lastStudyDate) &&
+      streak >= 2 &&
+      canUseStreakRescue()
+    ) {
+      setShowRescue(true);
+    }
+  }, [lastStudyDate, streak, canUseStreakRescue]);
 
   useEffect(() => {
     fetchLeaderboard().then(setLeaderboard).catch(() => {});
@@ -156,6 +169,13 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="pt-20 pb-12">
+      <StreakRescueModal
+        open={showRescue}
+        streak={streak}
+        weakTopic={weakTopics[0] ?? null}
+        onClose={() => setShowRescue(false)}
+        onRescue={useStreakRescue}
+      />
       <div className="max-w-6xl mx-auto px-4">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -239,6 +259,10 @@ const DashboardPage: React.FC = () => {
                   </motion.div>
                 );
               })}
+            </div>
+
+            <div className="mb-6">
+              <ExamAnalyzePanel />
             </div>
 
             <div className="grid lg:grid-cols-2 gap-6 mb-10">
