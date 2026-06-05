@@ -18,10 +18,13 @@ import { useSubjectStore } from '../store/subjectStore';
 import {
   fetchTopics,
   generatePracticeQuestions,
+  recordPractice,
+  getStudentSessionId,
   type CurriculumTopic,
   type PracticeQuestion,
   type PracticeSubject,
 } from '../services/api';
+import { useMathGamificationStore } from '../store/mathGamificationStore';
 
 const PRACTICE_STORAGE_KEY = 'giasu-practice-session';
 
@@ -60,12 +63,12 @@ function formatOptionLabel(opt: string, idx: number): string {
   return `${letter}. ${opt}`;
 }
 
-const PracticeMode: React.FC = () => {
+const PracticeMode: React.FC<{ initialTopic?: string }> = ({ initialTopic }) => {
   const { grade } = useGradeStore();
   const { subject } = useSubjectStore();
 
   const [topics, setTopics] = useState<CurriculumTopic[]>([]);
-  const [topicId, setTopicId] = useState('');
+  const [topicId, setTopicId] = useState(initialTopic || '');
   const [loadingTopics, setLoadingTopics] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
@@ -73,8 +76,13 @@ const PracticeMode: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState<number | null>(null);
   const [source, setSource] = useState<'ai' | 'fallback' | null>(null);
-
   const topicLabel = topics.find((t) => t.id === topicId)?.label || topicId;
+
+  const { recordPracticePerfect, recordTopicCorrect } = useMathGamificationStore();
+
+  useEffect(() => {
+    if (initialTopic) setTopicId(initialTopic);
+  }, [initialTopic]);
 
   const persist = useCallback(
     (
@@ -160,6 +168,7 @@ const PracticeMode: React.FC = () => {
         subject,
         topic: topicId,
         numberOfQuestions: 5,
+        lastScore: score != null ? Math.round((score / questions.length) * 100) : undefined,
       });
       const qs = result.questions;
       const emptyAnswers = qs.map(() => null);
@@ -203,6 +212,14 @@ const PracticeMode: React.FC = () => {
     setSubmitted(true);
     persist(questions, answers, true, correct);
     toast.success(`Điểm: ${correct}/${questions.length}`);
+
+    if (subject === 'math' && topicId) {
+      recordPractice(getStudentSessionId(), topicId, correct, questions.length).catch(() => {});
+      if (correct === questions.length) recordPracticePerfect();
+      questions.forEach((q, i) => {
+        if (answers[i] === q.correct) recordTopicCorrect(topicId);
+      });
+    }
   };
 
   const handleReset = () => {

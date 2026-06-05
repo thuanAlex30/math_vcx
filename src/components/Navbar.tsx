@@ -13,6 +13,7 @@ import {
   Sparkles,
   Languages,
 } from 'lucide-react';
+import { useDailyPlanStore } from '../store/dailyPlanStore';
 import SubjectSwitcher from './SubjectSwitcher';
 import { useSubjectStore } from '../store/subjectStore';
 
@@ -26,6 +27,7 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode, setDarkMode }) => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { subject, setSubject } = useSubjectStore();
+  const pendingTasks = useDailyPlanStore((s) => s.tasks.filter((t) => !t.completed).length);
 
   useEffect(() => {
     if (location.pathname.startsWith('/english')) {
@@ -83,6 +85,11 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode, setDarkMode }) => {
                 >
                   <Icon className="w-4 h-4" />
                   {item.label}
+                  {item.path === '/dashboard' && pendingTasks > 0 && (
+                    <span className="ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      {pendingTasks}
+                    </span>
+                  )}
                 </Link>
               );
             })}

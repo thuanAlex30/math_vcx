@@ -15,24 +15,58 @@ import {
   PenLine,
   Trophy,
   Star,
+  CalendarCheck,
 } from 'lucide-react';
 import { useDashboardStore } from '../store/dashboardStore';
 import { useHistoryStore } from '../store/historyStore';
 import { useEnglishStore, levelFromXp } from '../store/englishStore';
+import { useGradeStore } from '../store/gradeStore';
+import { useOnboardingStore } from '../store/onboardingStore';
+import { useStudentProfileStore } from '../store/studentProfileStore';
+import { useDailyPlanStore } from '../store/dailyPlanStore';
+import { useMathGamificationStore } from '../store/mathGamificationStore';
+import { useLearningStyleStore, preferredFormatLabel } from '../store/learningStyleStore';
 import { SAMPLE_TOPICS } from '../data/sampleProblems';
 import SubjectSwitcher from '../components/SubjectSwitcher';
+import KnowledgeMap from '../components/profile/KnowledgeMap';
+import DailyPlanCard from '../components/profile/DailyPlanCard';
+import WeakTopicsPanel from '../components/profile/WeakTopicsPanel';
+import MathBadges from '../components/gamification/MathBadges';
+import LearningPreferences from '../components/settings/LearningPreferences';
+import {
+  fetchProfile,
+  fetchKnowledgeMap,
+  fetchDailyPlan,
+  completeDailyTask,
+  getStudentSessionId,
+} from '../services/api';
 import { fetchLeaderboard } from '../services/englishApi';
 import type { LeaderboardEntry } from '../types/english';
 
-type DashTab = 'all' | 'math' | 'english';
+type DashTab = 'all' | 'math' | 'english' | 'today';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<DashTab>('all');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [planLoading, setPlanLoading] = useState(true);
 
+  const { grade } = useGradeStore();
+  const { name } = useOnboardingStore();
   const { totalSolved, topics, streak } = useDashboardStore();
   const { history } = useHistoryStore();
+  const { syncStreakBadges } = useMathGamificationStore();
+  const { preferredFormat } = useLearningStyleStore();
+  const {
+    weakTopics,
+    knowledgeNodes,
+    loading: profileLoading,
+    setProfile,
+    setKnowledgeMap,
+    setLoading,
+  } = useStudentProfileStore();
+  const { tasks, setPlan, completeTask } = useDailyPlanStore();
+
   const {
     xp,
     streak: enStreak,
@@ -45,9 +79,43 @@ const DashboardPage: React.FC = () => {
     badges,
   } = useEnglishStore();
 
+  const sessionId = getStudentSessionId();
+
+  useEffect(() => {
+    syncStreakBadges(streak);
+  }, [streak, syncStreakBadges]);
+
   useEffect(() => {
     fetchLeaderboard().then(setLeaderboard).catch(() => {});
   }, [xp]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchProfile(sessionId)
+      .then((p) => setProfile({ weakTopics: p.weakTopics, strongTopics: p.strongTopics }))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    fetchKnowledgeMap(sessionId, grade >= 10 ? grade : undefined)
+      .then((m) => setKnowledgeMap(m.nodes))
+      .catch(() => {});
+  }, [sessionId, grade, setProfile, setKnowledgeMap, setLoading]);
+
+  useEffect(() => {
+    setPlanLoading(true);
+    fetchDailyPlan(sessionId, grade, preferredFormat || undefined)
+      .then((plan) => setPlan(plan.date, plan.tasks))
+      .catch(() => {})
+      .finally(() => setPlanLoading(false));
+  }, [sessionId, grade, preferredFormat, setPlan]);
+
+  const handleCompleteTask = async (taskId: string) => {
+    completeTask(taskId);
+    try {
+      await completeDailyTask(sessionId, taskId);
+    } catch {
+      /* local state đã cập nhật */
+    }
+  };
 
   const mergedTopics = SAMPLE_TOPICS.map((sample) => {
     const stored = topics.find((t) => t.name === sample.name);
@@ -77,6 +145,14 @@ const DashboardPage: React.FC = () => {
 
   const showMath = tab === 'all' || tab === 'math';
   const showEnglish = tab === 'all' || tab === 'english';
+  const showToday = tab === 'all' || tab === 'today';
+
+  const tabs = [
+    { id: 'all' as const, label: 'Tổng quan', icon: LayoutDashboard },
+    { id: 'math' as const, label: 'Toán', icon: Calculator },
+    { id: 'english' as const, label: 'Anh', icon: Languages },
+    { id: 'today' as const, label: 'Hôm nay', icon: CalendarCheck },
+  ];
 
   return (
     <div className="pt-20 pb-12">
@@ -91,18 +167,19 @@ const DashboardPage: React.FC = () => {
                 Bảng tiến độ
               </h1>
               <p className="text-slate-600 dark:text-slate-400 mt-2 ml-14">
-                Theo dõi Toán & Tiếng Anh
+                {name ? `Chào ${name}! ` : ''}Theo dõi Toán & Tiếng Anh · Lớp {grade}
               </p>
+              {preferredFormat && (
+                <p className="text-sm text-brand-600 ml-14 mt-1">
+                  Gợi ý: em học tốt hơn khi {preferredFormatLabel(preferredFormat)}!
+                </p>
+              )}
             </div>
             <SubjectSwitcher />
           </div>
 
-          <div className="flex gap-2 mt-6 ml-0 md:ml-14">
-            {([
-              { id: 'all', label: 'Tất cả', icon: LayoutDashboard },
-              { id: 'math', label: 'Toán', icon: Calculator },
-              { id: 'english', label: 'Tiếng Anh', icon: Languages },
-            ] as const).map((t) => {
+          <div className="flex flex-wrap gap-2 mt-6 ml-0 md:ml-14">
+            {tabs.map((t) => {
               const Icon = t.icon;
               return (
                 <button
@@ -123,11 +200,31 @@ const DashboardPage: React.FC = () => {
           </div>
         </motion.div>
 
+        {showToday && (
+          <div className="mb-10">
+            <DailyPlanCard
+              tasks={tasks}
+              loading={planLoading}
+              onComplete={handleCompleteTask}
+            />
+          </div>
+        )}
+
         {showMath && (
           <>
             <h2 className="text-lg font-bold flex items-center gap-2 mb-4 text-brand-600">
               <Calculator className="w-5 h-5" /> Toán học
             </h2>
+
+            <div className="grid lg:grid-cols-2 gap-6 mb-6">
+              <KnowledgeMap nodes={knowledgeNodes} loading={profileLoading} gradeFilter={grade >= 10 ? grade : undefined} />
+              <WeakTopicsPanel topics={weakTopics} />
+            </div>
+
+            <div className="mb-6">
+              <MathBadges />
+            </div>
+
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
               {mathStats.map((s, i) => {
                 const Icon = s.icon;
@@ -182,9 +279,14 @@ const DashboardPage: React.FC = () => {
                     ))}
                   </ul>
                 )}
-                <button type="button" onClick={() => navigate('/tutor')} className="btn-primary w-full mt-6">
-                  Tiếp tục học Toán
-                </button>
+                <div className="flex gap-2 mt-6">
+                  <button type="button" onClick={() => navigate('/tutor')} className="btn-primary flex-1">
+                    Tiếp tục học Toán
+                  </button>
+                  <button type="button" onClick={() => navigate('/exam')} className="flex-1 py-3 rounded-xl border-2 border-brand-500 text-brand-600 font-bold text-sm">
+                    Thi thử THPT
+                  </button>
+                </div>
               </div>
             </div>
           </>
@@ -262,6 +364,12 @@ const DashboardPage: React.FC = () => {
               Tiếp tục học Tiếng Anh
             </button>
           </>
+        )}
+
+        {(tab === 'all' || tab === 'today') && (
+          <div className="mb-10">
+            <LearningPreferences />
+          </div>
         )}
       </div>
     </div>

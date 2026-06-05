@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { fetchVocabTopics, fetchVocabulary, expandVocabulary } from '../../services/englishApi';
 import { useEnglishStore } from '../../store/englishStore';
 import { useGradeStore, type Grade } from '../../store/gradeStore';
+import { useVocabSrsStore } from '../../store/vocabSrsStore';
 import EnglishAudioPlayer from './EnglishAudioPlayer';
 import type { VocabWord } from '../../types/english';
 
@@ -48,7 +49,10 @@ const VocabModule: React.FC = () => {
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [expanding, setExpanding] = useState(false);
+  const [vocabTab, setVocabTab] = useState<'new' | 'review'>('new');
   const { recordWordLearned, addXp } = useEnglishStore();
+  const { addCard, reviewCard, getDueCount, getDueCards } = useVocabSrsStore();
+  const dueCount = getDueCount();
 
   const loadTopic = useCallback(async () => {
     const g = grade as Grade;
@@ -97,11 +101,19 @@ const VocabModule: React.FC = () => {
     }
   };
 
-  const card = words[idx];
+  const displayWords =
+    vocabTab === 'review' && dueCount > 0
+      ? getDueCards().map((c) => words.find((w) => w.word === c.word) || { word: c.word, meaning: c.word, ipa: '', image: '📖' })
+      : words;
+
+  const card = displayWords[idx] || words[idx];
 
   const next = () => {
     setFlipped(false);
-    setIdx((i) => (i + 1) % words.length);
+    if (card?.word) {
+      addCard({ wordId: `${topicId}-${card.word}`, word: card.word, topicId });
+    }
+    setIdx((i) => (i + 1) % (displayWords.length || words.length || 1));
     recordWordLearned();
   };
 
@@ -114,6 +126,25 @@ const VocabModule: React.FC = () => {
 
   return (
     <div>
+      <div className="flex justify-center gap-2 mb-4">
+        <button
+          type="button"
+          onClick={() => { setVocabTab('new'); setIdx(0); setFlipped(false); }}
+          className={`chip ${vocabTab === 'new' ? 'ring-2 ring-emerald-500' : ''}`}
+        >
+          Học mới
+        </button>
+        <button
+          type="button"
+          onClick={() => { setVocabTab('review'); setIdx(0); setFlipped(false); }}
+          className={`chip ${vocabTab === 'review' ? 'ring-2 ring-emerald-500' : ''}`}
+        >
+          Ôn hôm nay
+          {dueCount > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px]">{dueCount}</span>
+          )}
+        </button>
+      </div>
       <p className="text-sm text-slate-500 mb-3 text-center">
         Lớp {grade} · {words.length} từ · học không giới hạn
         {difficulty ? ` · ${difficulty}` : ''}
@@ -198,12 +229,31 @@ const VocabModule: React.FC = () => {
         </AnimatePresence>
       </div>
 
+      {flipped && card && (
+        <div className="flex justify-center gap-2 mt-4 max-w-md mx-auto">
+          {(['Khó', 'Vừa', 'Dễ'] as const).map((label, qi) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => {
+                reviewCard(`${topicId}-${card.word}`, qi as 0 | 1 | 2);
+                addXp(qi === 2 ? 15 : qi === 1 ? 10 : 5);
+                next();
+              }}
+              className="flex-1 py-2 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex justify-center items-center gap-4 mt-6">
         <button type="button" onClick={prev} className="p-3 rounded-xl border border-slate-200 dark:border-slate-700">
           <ChevronLeft />
         </button>
         <span className="text-sm font-medium text-slate-500">
-          {idx + 1} / {words.length}
+          {idx + 1} / {displayWords.length || words.length}
         </span>
         <button type="button" onClick={next} className="p-3 rounded-xl border border-slate-200 dark:border-slate-700">
           <ChevronRight />

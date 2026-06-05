@@ -13,6 +13,8 @@ interface SolutionStepsProps {
   onToggle: (id: string) => void;
   speechRate: number;
   voice: VoiceChoice;
+  activeStepId?: string | null;
+  onStepReplay?: (stepId: string) => void;
 }
 
 const SolutionSteps: React.FC<SolutionStepsProps> = ({
@@ -21,6 +23,8 @@ const SolutionSteps: React.FC<SolutionStepsProps> = ({
   onToggle,
   speechRate,
   voice,
+  activeStepId,
+  onStepReplay,
 }) => (
   <div className="space-y-4">
     {steps.map((step, idx) => {
@@ -33,7 +37,9 @@ const SolutionSteps: React.FC<SolutionStepsProps> = ({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: idx * 0.06 }}
           className={`rounded-2xl border-2 overflow-hidden transition-colors ${
-            open
+            activeStepId === step.id
+              ? 'border-amber-400 dark:border-amber-600 bg-amber-50/50 dark:bg-amber-950/30 ring-2 ring-amber-300/50'
+              : open
               ? 'border-brand-300 dark:border-brand-700 bg-brand-50/30 dark:bg-brand-950/20'
               : 'border-slate-200/80 dark:border-slate-700/80 bg-white/50 dark:bg-slate-900/30'
           }`}
@@ -64,13 +70,25 @@ const SolutionSteps: React.FC<SolutionStepsProps> = ({
                   <MathMarkdown content={step.content} />
                 </div>
                 <div className="mt-4 flex items-center gap-3">
-                  <AudioPlayer
-                    text={step.content}
-                    speechRate={speechRate}
-                    voice={voice}
-                    compact
-                  />
-                  <span className="text-xs text-slate-500">Nghe riêng bước này</span>
+                  {onStepReplay ? (
+                    <button
+                      type="button"
+                      onClick={() => onStepReplay(step.id)}
+                      className="text-xs font-semibold text-brand-600 hover:underline"
+                    >
+                      Nghe lại bước này
+                    </button>
+                  ) : (
+                    <>
+                      <AudioPlayer
+                        text={step.content}
+                        speechRate={speechRate}
+                        voice={voice}
+                        compact
+                      />
+                      <span className="text-xs text-slate-500">Nghe riêng bước này</span>
+                    </>
+                  )}
                 </div>
               </motion.div>
             )}

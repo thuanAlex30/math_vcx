@@ -10,6 +10,8 @@ interface ProblemInputProps {
   onQuestionChange: (q: string) => void;
   onImageChange: (img: string | null) => void;
   onSolve: () => void;
+  solveLabel?: string;
+  hideImageUpload?: boolean;
 }
 
 const ProblemInput: React.FC<ProblemInputProps> = ({
@@ -19,6 +21,8 @@ const ProblemInput: React.FC<ProblemInputProps> = ({
   onQuestionChange,
   onImageChange,
   onSolve,
+  solveLabel = 'Giải bài ngay',
+  hideImageUpload = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,6 +67,7 @@ const ProblemInput: React.FC<ProblemInputProps> = ({
         ))}
       </div>
 
+      {!hideImageUpload && (
       <div
         className="mt-5 p-6 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-brand-400 dark:hover:border-brand-500 transition cursor-pointer text-center group"
         onClick={() => fileInputRef.current?.click()}
@@ -76,8 +81,9 @@ const ProblemInput: React.FC<ProblemInputProps> = ({
         </p>
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
       </div>
+      )}
 
-      {image && (
+      {!hideImageUpload && image && (
         <div className="mt-4 relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
           <img src={image} alt="Đề bài" className="max-h-52 w-full object-contain bg-slate-100 dark:bg-slate-800" />
           <button
@@ -105,7 +111,7 @@ const ProblemInput: React.FC<ProblemInputProps> = ({
         ) : (
           <>
             <Send className="w-5 h-5" />
-            Giải bài ngay
+            {solveLabel}
           </>
         )}
       </motion.button>

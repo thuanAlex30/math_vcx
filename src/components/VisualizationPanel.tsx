@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { VisualizationData } from '../types';
 import { LineChart, Shapes, ArrowRight } from 'lucide-react';
 
@@ -15,16 +15,18 @@ declare global {
 
 interface VisualizationPanelProps {
   visualization: VisualizationData | null;
+  lazyLoad?: boolean;
 }
 
 const DESMOS_SCRIPT = 'https://www.desmos.com/api/v1.9/calculator.js?apiKey=dcb31709b452b1d9eb431df79214167d';
 
-const VisualizationPanel: React.FC<VisualizationPanelProps> = ({ visualization }) => {
+const VisualizationPanel: React.FC<VisualizationPanelProps> = ({ visualization, lazyLoad }) => {
   const desmosRef = useRef<HTMLDivElement>(null);
   const calcRef = useRef<{ destroy: () => void } | null>(null);
+  const [activated, setActivated] = useState(!lazyLoad);
 
   useEffect(() => {
-    if (!visualization || visualization.visualization !== 'graph' || !desmosRef.current) return;
+    if (!activated || !visualization || visualization.visualization !== 'graph' || !desmosRef.current) return;
 
     const expr =
       visualization.data.latex ||
@@ -65,7 +67,7 @@ const VisualizationPanel: React.FC<VisualizationPanelProps> = ({ visualization }
       calcRef.current?.destroy();
       calcRef.current = null;
     };
-  }, [visualization]);
+  }, [visualization, activated]);
 
   if (!visualization) {
     return (
@@ -82,6 +84,21 @@ const VisualizationPanel: React.FC<VisualizationPanelProps> = ({ visualization }
   }
 
   if (visualization.visualization === 'graph') {
+    if (lazyLoad && !activated) {
+      return (
+        <div className="card p-10 text-center">
+          <LineChart className="w-10 h-10 mx-auto text-slate-400 mb-3" />
+          <p className="text-sm text-slate-500 mb-4">Chế độ tiết kiệm data — Desmos chưa tải</p>
+          <button
+            type="button"
+            onClick={() => setActivated(true)}
+            className="btn-primary text-sm px-6 py-2"
+          >
+            Tải đồ thị
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="card p-4 overflow-hidden">
         <h3 className="font-semibold mb-3 flex items-center gap-2 text-blue-600 dark:text-blue-400">

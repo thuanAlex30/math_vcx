@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Brain, Gauge, User, Mic2, LayoutGrid, MessageCircle, ClipboardList } from 'lucide-react';
+import { useLocation, Link } from 'react-router-dom';
+import { Brain, Gauge, User, Mic2, LayoutGrid, MessageCircle, ClipboardList, Lightbulb, Map } from 'lucide-react';
 import ProblemInput from '../components/ProblemInput';
 import PracticeMode from '../components/PracticeMode';
 import GradeSubjectSelector from '../components/GradeSubjectSelector';
@@ -9,13 +10,25 @@ import SolutionSteps from '../components/SolutionSteps';
 import VisualizationPanel from '../components/VisualizationPanel';
 import ChatPanel from '../components/ChatPanel';
 import LoadingSkeleton from '../components/LoadingSkeleton';
-import AudioPlayer from '../components/AudioPlayer';
-import MathMarkdown from '../components/MathMarkdown';
-import { solveMathStream, sendChat } from '../services/api';
+import SocraticPanel from '../components/tutor/SocraticPanel';
+import StepTtsHighlight from '../components/tutor/StepTtsHighlight';
+import ImageCropUpload from '../components/tutor/ImageCropUpload';
+import {
+  solveMathStream,
+  sendChat,
+  getStudentSessionId,
+  recordTopicResult,
+  checkMathWriting,
+} from '../services/api';
 import { useTutorStore } from '../store/tutorStore';
 import { useHistoryStore, detectTopic } from '../store/historyStore';
 import { useDashboardStore } from '../store/dashboardStore';
+import { useGradeStore } from '../store/gradeStore';
+import { useOnboardingStore, buildStudentContext } from '../store/onboardingStore';
+import { useLearningStyleStore } from '../store/learningStyleStore';
+import { useMathGamificationStore } from '../store/mathGamificationStore';
 import type { SolutionStep } from '../types';
+import type { SolveMode, TutorPersona } from '../services/api';
 
 function parseStepsFromText(text: string): SolutionStep[] {
   const steps: SolutionStep[] = [];
@@ -36,7 +49,6 @@ function parseStepsFromText(text: string): SolutionStep[] {
 type Tab = 'solution' | 'graph' | 'chat';
 type TutorMode = 'solve' | 'practice';
 
-const STUDENT_SESSION_KEY = 'mathmaster-student-session';
 const TUTOR_MODE_KEY = 'giasu-tutor-mode';
 
 function getInitialMode(): TutorMode {
@@ -45,17 +57,10 @@ function getInitialMode(): TutorMode {
   return saved === 'practice' ? 'practice' : 'solve';
 }
 
-/** Session ID ổn định trên trình duyệt — dùng cho Graph RAG profile backend */
-function getStudentSessionId(): string {
-  let id = localStorage.getItem(STUDENT_SESSION_KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(STUDENT_SESSION_KEY, id);
-  }
-  return id;
-}
-
 const TutorPage: React.FC = () => {
+  const location = useLocation();
+  const locState = location.state as { mode?: string; topic?: string } | null;
+
   const {
     question,
     image,
@@ -79,18 +84,41 @@ const TutorPage: React.FC = () => {
     reset,
   } = useTutorStore();
 
+  const { grade } = useGradeStore();
   const { addToHistory } = useHistoryStore();
   const { recordSolve } = useDashboardStore();
+  const { dataSaver } = useLearningStyleStore();
+  const { recordFirstSolve, recordSelfSolve, checkNightOwl } = useMathGamificationStore();
+  const { incrementSession } = useLearningStyleStore();
+
   const [chatLoading, setChatLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('solution');
-  const [mode, setMode] = useState<TutorMode>(getInitialMode);
+  const [mode, setMode] = useState<TutorMode>(
+    locState?.mode === 'practice' ? 'practice' : getInitialMode()
+  );
+  const [solveMode, setSolveMode] = useState<SolveMode>('full');
+  const [tutorPersona, setTutorPersona] = useState<TutorPersona>('teacher');
+  const [lastTopicId, setLastTopicId] = useState<string | null>(null);
+  const [studentWriting, setStudentWriting] = useState('');
+  const [writingResult, setWritingResult] = useState<{ score: number; feedback: string } | null>(null);
+  const [writingLoading, setWritingLoading] = useState(false);
+  const [showWriting, setShowWriting] = useState(false);
+
+  const studentContext = {
+    ...buildStudentContext(),
+    grade,
+  };
 
   const switchMode = (next: TutorMode) => {
     setMode(next);
     localStorage.setItem(TUTOR_MODE_KEY, next);
   };
 
-  const handleSolve = async () => {
+  useEffect(() => {
+    incrementSession();
+  }, [incrementSession]);
+
+  const runSolve = async (opts: { mode: SolveMode; skipProfileUpdate?: boolean; profileCorrect?: boolean }) => {
     if (!question.trim() && !image) {
       toast.error('Vui lòng nhập đề bài hoặc tải ảnh');
       return;
@@ -108,6 +136,12 @@ const TutorPage: React.FC = () => {
           question,
           image: image || undefined,
           studentSessionId: getStudentSessionId(),
+          grade,
+          mode: opts.mode,
+          studentContext,
+          compact: dataSaver,
+          skipProfileUpdate: opts.skipProfileUpdate,
+          profileCorrect: opts.profileCorrect,
         },
         (token) => appendSolution(token),
         (payload) => {
@@ -118,21 +152,25 @@ const TutorPage: React.FC = () => {
             ? payload.steps
             : parseStepsFromText(finalSolution);
           setSolution(finalSolution, finalSteps, payload.visualization ?? null);
-          saveResult(
-            payload.question || question,
-            finalSolution,
-            payload.visualization ?? null
-          );
+          if (payload.topicId) setLastTopicId(payload.topicId);
+
+          if (opts.mode === 'full') {
+            saveResult(
+              payload.question || question,
+              finalSolution,
+              payload.visualization ?? null
+            );
+          }
         }
       );
       if (!streamDone) {
         const st = useTutorStore.getState();
-        if (st.solution) {
+        if (st.solution && opts.mode === 'full') {
           setSolution(st.solution, parseStepsFromText(st.solution), null);
           saveResult(question, st.solution, null);
         }
       }
-      toast.success('Đã giải xong!');
+      toast.success(opts.mode === 'hint' ? 'Đã có gợi ý!' : 'Đã giải xong!');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Có lỗi xảy ra';
       toast.error(msg, { duration: 6000 });
@@ -141,11 +179,27 @@ const TutorPage: React.FC = () => {
     }
   };
 
-  const saveResult = (
-    q: string,
-    sol: string,
-    viz: typeof visualization
-  ) => {
+  const handleSolve = () => runSolve({ mode: solveMode });
+
+  const handleViewFull = () => {
+    setSolveMode('full');
+    runSolve({ mode: 'full' });
+  };
+
+  const handleUnderstood = async () => {
+    if (lastTopicId) {
+      try {
+        await recordTopicResult(getStudentSessionId(), lastTopicId, true);
+      } catch {
+        /* ignore */
+      }
+    }
+    recordSelfSolve();
+    useLearningStyleStore.getState().recordUsage('socratic');
+    toast.success('Tuyệt! Em tự hiểu bài rồi 🎉');
+  };
+
+  const saveResult = (q: string, sol: string, viz: typeof visualization) => {
     const topic = detectTopic(q);
     addToHistory({
       id: Date.now().toString(),
@@ -156,18 +210,25 @@ const TutorPage: React.FC = () => {
       visualization: viz,
     });
     recordSolve(topic);
+    recordFirstSolve();
+    checkNightOwl();
   };
 
   const handleChat = async (text: string) => {
-    if (!solution) {
+    if (!solution && solveMode === 'full') {
       toast.error('Hãy giải bài trước khi chat');
       return;
     }
     addChatMessage({ role: 'user', content: text });
     setChatLoading(true);
+    useLearningStyleStore.getState().recordUsage('chat');
     try {
       const msgs = [...chatMessages, { role: 'user' as const, content: text }];
-      const { reply } = await sendChat(msgs, { question, solution });
+      const { reply } = await sendChat(msgs, { question, solution }, {
+        tutorPersona,
+        grade,
+        studentContext,
+      });
       addChatMessage({ role: 'assistant', content: reply });
     } catch {
       toast.error('Không gửi được tin nhắn');
@@ -176,11 +237,31 @@ const TutorPage: React.FC = () => {
     }
   };
 
+  const handleCheckWriting = async () => {
+    if (!question.trim() || !studentWriting.trim()) {
+      toast.error('Cần đề bài và lời giải của em');
+      return;
+    }
+    setWritingLoading(true);
+    try {
+      const res = await checkMathWriting({
+        problem: question,
+        studentSolution: studentWriting,
+        grade,
+      });
+      setWritingResult(res);
+    } catch {
+      toast.error('Không chấm được bài');
+    } finally {
+      setWritingLoading(false);
+    }
+  };
+
   const displaySteps =
     steps.length > 0 ? steps : solution ? parseStepsFromText(solution) : [];
 
   const tabs: { id: Tab; label: string; icon: typeof LayoutGrid }[] = [
-    { id: 'solution', label: 'Lời giải', icon: Brain },
+    { id: 'solution', label: solveMode === 'hint' ? 'Gợi ý' : 'Lời giải', icon: Brain },
     { id: 'graph', label: 'Minh họa', icon: LayoutGrid },
     { id: 'chat', label: 'Hỏi thêm', icon: MessageCircle },
   ];
@@ -193,19 +274,29 @@ const TutorPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-2xl md:text-3xl font-extrabold flex items-center gap-3">
-            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center shadow-lg">
-              <Brain className="w-6 h-6 text-white" />
-            </span>
-            Phòng học AI
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2 ml-14 max-w-xl">
-            {mode === 'solve'
-              ? 'Nhập đề bên trái · Xem lời giải, đồ thị và nghe giọng gia sư bên phải'
-              : 'Chọn lớp, chủ đề · Làm 5 câu trắc nghiệm do AI sinh'}
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-extrabold flex items-center gap-3">
+                <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                  <Brain className="w-6 h-6 text-white" />
+                </span>
+                Phòng học AI
+              </h1>
+              <p className="text-slate-600 dark:text-slate-400 mt-2 ml-14 max-w-xl">
+                {mode === 'solve'
+                  ? 'Nhập đề · Giải đầy đủ hoặc gợi ý trước'
+                  : 'Chọn lớp, chủ đề · Làm 5 câu trắc nghiệm'}
+              </p>
+            </div>
+            <Link
+              to="/dashboard"
+              className="flex items-center gap-2 text-sm font-semibold text-brand-600 hover:underline"
+            >
+              <Map className="w-4 h-4" /> Bản đồ kiến thức
+            </Link>
+          </div>
 
-          <div className="flex gap-2 p-1.5 rounded-2xl glass-card mt-6 ml-0 sm:ml-14 max-w-md">
+          <div className="flex flex-wrap gap-2 p-1.5 rounded-2xl glass-card mt-6 ml-0 sm:ml-14 max-w-lg">
             <button
               type="button"
               onClick={() => switchMode('solve')}
@@ -216,7 +307,7 @@ const TutorPage: React.FC = () => {
               }`}
             >
               <Brain className="w-4 h-4" />
-              Gia sư AI
+              Giải bài
             </button>
             <button
               type="button"
@@ -234,21 +325,84 @@ const TutorPage: React.FC = () => {
         </motion.header>
 
         {mode === 'practice' ? (
-          <PracticeMode />
+          <PracticeMode initialTopic={locState?.topic} />
         ) : (
         <div className="grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-6 lg:gap-8">
           <div className="space-y-6">
             <div className="card p-4">
               <GradeSubjectSelector showSubject={false} />
             </div>
-            <ProblemInput
-              question={question}
-              image={image}
-              isLoading={isLoading}
-              onQuestionChange={setQuestion}
-              onImageChange={setImage}
-              onSolve={handleSolve}
-            />
+
+            <div className="card p-4">
+              <p className="text-xs font-semibold text-slate-500 uppercase mb-3">Chế độ giải</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSolveMode('full')}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold ${
+                    solveMode === 'full' ? 'bg-brand-600 text-white' : 'border border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  Giải đầy đủ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSolveMode('hint')}
+                  className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-sm font-semibold ${
+                    solveMode === 'hint' ? 'bg-amber-500 text-white' : 'border border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  <Lightbulb className="w-4 h-4" /> Gợi ý trước
+                </button>
+              </div>
+            </div>
+
+            <ImageCropUpload onImageReady={setImage} currentImage={image}>
+              <ProblemInput
+                question={question}
+                image={image}
+                isLoading={isLoading}
+                onQuestionChange={setQuestion}
+                onImageChange={setImage}
+                onSolve={handleSolve}
+                solveLabel={solveMode === 'hint' ? 'Lấy gợi ý' : 'Giải bài ngay'}
+                hideImageUpload
+              />
+            </ImageCropUpload>
+
+            <div className="card p-4">
+              <button
+                type="button"
+                onClick={() => setShowWriting(!showWriting)}
+                className="text-sm font-semibold text-brand-600"
+              >
+                {showWriting ? 'Ẩn' : 'Viết lời giải của em'} (nâng cao)
+              </button>
+              {showWriting && (
+                <div className="mt-3 space-y-3">
+                  <textarea
+                    value={studentWriting}
+                    onChange={(e) => setStudentWriting(e.target.value)}
+                    placeholder="Trình bày lời giải của em..."
+                    className="input-field min-h-[120px] w-full"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCheckWriting}
+                    disabled={writingLoading}
+                    className="btn-primary w-full text-sm py-2"
+                  >
+                    {writingLoading ? 'Đang chấm...' : 'Chấm trình bày'}
+                  </button>
+                  {writingResult && (
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-sm">
+                      <p className="font-bold">Điểm: {writingResult.score}/10</p>
+                      <p className="mt-1 text-slate-600 dark:text-slate-400">{writingResult.feedback}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="card p-5 hidden xl:block">
               <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -296,7 +450,10 @@ const TutorPage: React.FC = () => {
                   <button
                     key={tab.id}
                     type="button"
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      if (tab.id === 'graph') useLearningStyleStore.getState().recordUsage('graph');
+                    }}
                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition ${
                       activeTab === tab.id
                         ? 'bg-brand-600 text-white shadow-md'
@@ -317,65 +474,63 @@ const TutorPage: React.FC = () => {
                 animate={{ opacity: 1 }}
                 className="card p-6 lg:p-8"
               >
-                <div className="flex flex-col gap-4 mb-6">
-                  <h2 className="text-xl font-bold">Lời giải chi tiết</h2>
-                  {solution && (
-                    <>
-                      <AudioPlayer
-                        text={solution}
-                        speechRate={speechRate}
-                        voice={voice}
-                      />
-                      <div className="xl:hidden flex gap-2">
-                        {(['female', 'male'] as const).map((v) => (
-                          <button
-                            key={v}
-                            type="button"
-                            onClick={() => setVoice(v)}
-                            className={`chip ${voice === v ? 'ring-2 ring-brand-500' : ''}`}
-                          >
-                            {v === 'female' ? 'Cô My' : 'Thầy Minh'}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
+                <h2 className="text-xl font-bold mb-6">
+                  {solveMode === 'hint' ? 'Gợi ý Socratic' : 'Lời giải chi tiết'}
+                </h2>
 
                 {isLoading && !solution && <LoadingSkeleton />}
-                {isLoading && solution && (
-                  <div>
-                    <MathMarkdown content={solution} />
-                    <p className="text-sm text-brand-600 mt-3 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
-                      AI đang viết tiếp...
-                    </p>
-                  </div>
-                )}
-                {!isLoading && solution && displaySteps.length > 0 && (
-                  <SolutionSteps
-                    steps={displaySteps}
-                    expandedSteps={expandedSteps}
-                    onToggle={toggleStep}
-                    speechRate={speechRate}
-                    voice={voice}
+
+                {solveMode === 'hint' ? (
+                  <SocraticPanel
+                    hints={solution}
+                    isLoading={isLoading}
+                    onViewFullSolution={handleViewFull}
+                    onUnderstood={handleUnderstood}
                   />
-                )}
-                {!isLoading && !solution && (
-                  <div className="text-center py-20">
-                    <div className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                      <Brain className="w-10 h-10 text-slate-300" />
-                    </div>
-                    <p className="text-slate-500 font-medium">Chưa có lời giải</p>
-                    <p className="text-sm text-slate-400 mt-1">Nhập đề và nhấn Giải bài</p>
-                  </div>
+                ) : (
+                  <>
+                    {isLoading && solution && (
+                      <div>
+                        <p className="text-sm text-brand-600 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
+                          AI đang viết tiếp...
+                        </p>
+                      </div>
+                    )}
+                    {!isLoading && solution && displaySteps.length > 0 && (
+                      <StepTtsHighlight
+                        steps={displaySteps}
+                        expandedSteps={expandedSteps}
+                        onToggle={toggleStep}
+                        speechRate={speechRate}
+                        voice={voice}
+                        renderSteps={(activeStepId, onStepReplay) => (
+                          <SolutionSteps
+                            steps={displaySteps}
+                            expandedSteps={expandedSteps}
+                            onToggle={toggleStep}
+                            speechRate={speechRate}
+                            voice={voice}
+                            activeStepId={activeStepId}
+                            onStepReplay={onStepReplay}
+                          />
+                        )}
+                      />
+                    )}
+                    {!isLoading && !solution && (
+                      <div className="text-center py-20">
+                        <Brain className="w-10 h-10 mx-auto text-slate-300 mb-4" />
+                        <p className="text-slate-500 font-medium">Chưa có lời giải</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </motion.div>
             )}
 
             {activeTab === 'graph' && (
               <motion.div key="graph" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <VisualizationPanel visualization={visualization} />
+                <VisualizationPanel visualization={visualization} lazyLoad={dataSaver} />
               </motion.div>
             )}
 
@@ -384,8 +539,10 @@ const TutorPage: React.FC = () => {
                 <ChatPanel
                   messages={chatMessages}
                   onSend={handleChat}
-                  disabled={!solution}
+                  disabled={!solution && solveMode === 'full'}
                   isTyping={chatLoading}
+                  tutorPersona={tutorPersona}
+                  onPersonaChange={setTutorPersona}
                 />
               </motion.div>
             )}

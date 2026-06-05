@@ -3,18 +3,27 @@ import { motion } from 'framer-motion';
 import { Send, Bot, User } from 'lucide-react';
 import MathMarkdown from './MathMarkdown';
 import type { ChatMessage } from '../types';
+import type { TutorPersona } from '../services/api';
 
 interface ChatPanelProps {
   messages: ChatMessage[];
   onSend: (text: string) => Promise<void>;
   disabled?: boolean;
   isTyping?: boolean;
+  tutorPersona?: TutorPersona;
+  onPersonaChange?: (p: TutorPersona) => void;
 }
 
 const SUGGESTIONS = [
-  'Giải thích bước 2 đơn giản hơn',
-  'Tại sao dùng công thức này?',
-  'Cho ví dụ tương tự',
+  'Em chưa hiểu bước 2',
+  'Giải thích đơn giản hơn',
+  'Cho em ví dụ tương tự',
+];
+
+const PERSONAS: { id: TutorPersona; label: string }[] = [
+  { id: 'teacher', label: 'Thầy/cô' },
+  { id: 'friend', label: 'Bạn học' },
+  { id: 'strict', label: 'Nghiêm' },
 ];
 
 const ChatPanel: React.FC<ChatPanelProps> = ({
@@ -22,6 +31,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   onSend,
   disabled,
   isTyping,
+  tutorPersona = 'teacher',
+  onPersonaChange,
 }) => {
   const [input, setInput] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
@@ -39,14 +50,30 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
   return (
     <div className="card flex flex-col min-h-[480px] lg:min-h-[560px]">
-      <div className="p-5 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-          <Bot className="w-5 h-5 text-white" />
+      <div className="p-5 border-b border-slate-200/80 dark:border-slate-700/80">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+            <Bot className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-bold">Gia sư trò chuyện</h3>
+            <p className="text-xs text-slate-500">Hỏi tiếp về bài vừa giải</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-bold">Gia sư trò chuyện</h3>
-          <p className="text-xs text-slate-500">Hỏi tiếp về bài vừa giải</p>
-        </div>
+        {onPersonaChange && (
+          <div className="flex flex-wrap gap-2">
+            {PERSONAS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => onPersonaChange(p.id)}
+                className={`chip text-xs ${tutorPersona === p.id ? 'ring-2 ring-brand-500' : ''}`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
