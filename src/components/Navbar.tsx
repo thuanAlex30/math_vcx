@@ -17,6 +17,7 @@ import { useDailyPlanStore } from '../store/dailyPlanStore';
 import SubjectSwitcher from './SubjectSwitcher';
 import UserMenu from './UserMenu';
 import { useSubjectStore } from '../store/subjectStore';
+import { NotificationCenter } from './NotificationCenter';
 
 interface NavbarProps {
   darkMode: boolean;
@@ -98,6 +99,7 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode, setDarkMode }) => {
         </div>
 
         <div className="flex items-center gap-2">
+          <NotificationCenter />
           <UserMenu />
           <div className="lg:hidden">
             <SubjectSwitcher compact />
