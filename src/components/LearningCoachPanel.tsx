@@ -1,38 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Lightbulb, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
-import * as socialApi from '../services/socialApi';
-
-interface CoachingData {
-  message: string;
-  focusArea?: string;
-  nextSteps?: string[];
-  timestamp?: string;
-}
-
-interface AnalysisData {
-  stats: {
-    overallSuccessRate: number;
-    recentSuccessRate: number;
-    totalProblems: number;
-  };
-  weakAreas?: Array<{ topic: string; successRate: number }>;
-  strongAreas?: Array<{ topic: string; successRate: number }>;
-  insights?: string[];
-}
-
-interface Recommendation {
-  type: string;
-  title: string;
-  description: string;
-  priority: string;
-  estimatedTime: number;
-  difficulty?: string;
-}
+import {
+  getCoachingMessage,
+  getCoachingAnalysis,
+  getPersonalizedRecommendations,
+  type CoachingMessage,
+  type CoachingAnalysis,
+  type PersonalizedRecommendation,
+} from '../services/socialApi';
 
 export const LearningCoachPanel: React.FC = () => {
-  const [coaching, setCoaching] = useState<CoachingData | null>(null);
-  const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [coaching, setCoaching] = useState<CoachingMessage | null>(null);
+  const [analysis, setAnalysis] = useState<CoachingAnalysis | null>(null);
+  const [recommendations, setRecommendations] = useState<PersonalizedRecommendation[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'coach' | 'analysis' | 'recommendations'>('coach');
 
@@ -44,8 +24,8 @@ export const LearningCoachPanel: React.FC = () => {
     try {
       setLoading(true);
       const [coachData, analysisData] = await Promise.all([
-        socialApi.getCoachingMessage(),
-        socialApi.getCoachingAnalysis(),
+        getCoachingMessage(),
+        getCoachingAnalysis(),
       ]);
       setCoaching(coachData.coachingMessage);
       setAnalysis(analysisData.analysis);
@@ -59,7 +39,7 @@ export const LearningCoachPanel: React.FC = () => {
   const loadRecommendations = async () => {
     try {
       setLoading(true);
-      const data = await socialApi.getPersonalizedRecommendations();
+      const data = await getPersonalizedRecommendations();
       setRecommendations(data.recommendations || []);
     } catch (error) {
       console.error('Error loading recommendations:', error);

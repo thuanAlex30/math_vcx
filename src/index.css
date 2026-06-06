@@ -75,15 +75,23 @@
   }
 }
 
+/* Inline math trong option labels — không phá flex layout */
+.math-inline .katex {
+  font-size: 1em;
+}
+
 .katex-display {
   @apply my-4 overflow-x-auto rounded-xl bg-slate-50/80 dark:bg-slate-800/50 px-4 py-3;
 }
 
-.prose-math {
-  @apply max-w-none text-[15px] leading-relaxed;
+.prose-math .katex {
+  font-size: 0.95em;
 }
 
-/* KaTeX trong lời giải / chat / luyện tập */
+.prose-math .katex-display > .katex {
+  font-size: 1em;
+}
+
 .katex-content .katex {
   font-size: 1.05em;
 }

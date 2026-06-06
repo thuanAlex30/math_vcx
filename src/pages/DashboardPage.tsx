@@ -18,6 +18,8 @@ import {
   CalendarCheck,
 } from 'lucide-react';
 import { useDashboardStore } from '../store/dashboardStore';
+import SocialHubCard from '../components/SocialHubCard';
+import ClassLeaderboardCard from '../components/ClassLeaderboardCard';
 import { useHistoryStore } from '../store/historyStore';
 import { useEnglishStore, levelFromXp } from '../store/englishStore';
 import { useGradeStore } from '../store/gradeStore';
@@ -221,12 +223,16 @@ const DashboardPage: React.FC = () => {
         </motion.div>
 
         {showToday && (
-          <div className="mb-10">
+          <div className="space-y-8 mb-10">
             <DailyPlanCard
               tasks={tasks}
               loading={planLoading}
               onComplete={handleCompleteTask}
             />
+            <SocialHubCard />
+            <div className="grid sm:grid-cols-2 gap-6">
+              <ClassLeaderboardCard />
+            </div>
           </div>
         )}
 

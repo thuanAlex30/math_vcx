@@ -6,6 +6,7 @@ import { useEnglishStore } from '../../store/englishStore';
 import { useGradeStore, type Grade } from '../../store/gradeStore';
 import EnglishAudioPlayer from './EnglishAudioPlayer';
 import type { ListeningQuestion } from '../../types/english';
+import LoadingSkeleton from '../LoadingSkeleton';
 
 const ListeningModule: React.FC = () => {
   const { grade } = useGradeStore();
@@ -46,23 +47,16 @@ const ListeningModule: React.FC = () => {
       const res = await gradeListening(lesson.questions, answers);
       setGraded(res);
       updateScores({ listening: res.score });
-      addXp(res.score / 2);
+      addXp(Math.round(res.score / 2));
       const suggestion = recordAdaptiveScore(res.score);
       if (suggestion === 'up') {
         const next = level === 'beginner' ? 'intermediate' : 'advanced';
-        toast('Thử mức khó hơn nhé!', {
-          icon: '🚀',
-          duration: 5000,
-        });
-        if (window.confirm(`Em làm tốt 3 lần liên tiếp! Chuyển sang mức ${next}?`)) {
-          setAdaptiveLevel(next);
-        }
+        toast.success('Làm tốt lắm! Thử mức khó hơn nhé 🚀');
+        setAdaptiveLevel(next);
       } else if (suggestion === 'down') {
+        toast('Ôn lại mức dễ hơn sẽ giúp em vững hơn 📘');
         const prev = level === 'advanced' ? 'intermediate' : 'beginner';
-        toast('Ôn lại mức dễ hơn sẽ giúp em vững hơn', { icon: '📘' });
-        if (window.confirm(`Điểm thấp 3 lần — thử mức ${prev}?`)) {
-          setAdaptiveLevel(prev);
-        }
+        setAdaptiveLevel(prev);
       }
     } catch {
       toast.error('Không chấm được');
@@ -81,6 +75,12 @@ const ListeningModule: React.FC = () => {
       <button type="button" onClick={generate} disabled={loading} className="btn-primary w-full bg-emerald-600 hover:from-emerald-600">
         {loading ? <Loader2 className="animate-spin mx-auto" /> : 'Tạo bài luyện nghe mới'}
       </button>
+
+      {loading && !lesson && (
+        <div className="card p-6 space-y-4">
+          <LoadingSkeleton />
+        </div>
+      )}
 
       {lesson && (
         <div className="card p-6 space-y-4">

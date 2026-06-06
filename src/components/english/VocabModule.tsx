@@ -8,6 +8,7 @@ import { useGradeStore, type Grade } from '../../store/gradeStore';
 import { useVocabSrsStore } from '../../store/vocabSrsStore';
 import EnglishAudioPlayer from './EnglishAudioPlayer';
 import type { VocabWord } from '../../types/english';
+import LoadingSkeleton from '../LoadingSkeleton';
 
 const EXTRA_STORAGE_KEY = 'english-vocab-extra';
 
@@ -49,29 +50,46 @@ const VocabModule: React.FC = () => {
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [expanding, setExpanding] = useState(false);
+  const [loadingTopics, setLoadingTopics] = useState(true);
+  const [loadingWords, setLoadingWords] = useState(true);
   const [vocabTab, setVocabTab] = useState<'new' | 'review'>('new');
   const { recordWordLearned, addXp } = useEnglishStore();
   const { addCard, reviewCard, getDueCount, getDueCards } = useVocabSrsStore();
   const dueCount = getDueCount();
 
   const loadTopic = useCallback(async () => {
-    const g = grade as Grade;
-    const topic = await fetchVocabulary(topicId, g);
-    const saved = loadExtraWords(g, topicId);
-    const merged = mergeUniqueWords(topic.words, saved);
-    setWords(merged);
-    setDifficulty(topic.difficulty ?? '');
-    setIdx(0);
-    setFlipped(false);
+    setLoadingWords(true);
+    try {
+      const g = grade as Grade;
+      const topic = await fetchVocabulary(topicId, g);
+      const saved = loadExtraWords(g, topicId);
+      const merged = mergeUniqueWords(topic.words, saved);
+      setWords(merged);
+      setDifficulty(topic.difficulty ?? '');
+    } catch {
+      toast.error('Không tải được từ vựng');
+      setWords([]);
+    } finally {
+      setIdx(0);
+      setFlipped(false);
+      setLoadingWords(false);
+    }
   }, [grade, topicId]);
 
   useEffect(() => {
-    fetchVocabTopics(grade as Grade).then((t) => {
-      setTopics(t);
-      if (t.length && !t.some((x) => x.id === topicId)) {
-        setTopicId(t[0].id);
-      }
-    });
+    setLoadingTopics(true);
+    fetchVocabTopics(grade as Grade)
+      .then((t) => {
+        setTopics(t);
+        if (t.length && !t.some((x) => x.id === topicId)) {
+          setTopicId(t[0].id);
+        }
+      })
+      .catch(() => {
+        toast.error('Không tải được chủ đề từ vựng');
+        setTopics([]);
+      })
+      .finally(() => setLoadingTopics(false));
   }, [grade]);
 
   useEffect(() => {
@@ -122,7 +140,11 @@ const VocabModule: React.FC = () => {
     setIdx((i) => (i - 1 + words.length) % words.length);
   };
 
-  if (!card) return <p className="text-slate-500">Đang tải...</p>;
+  if (loadingTopics || loadingWords) return <div className="max-w-md mx-auto"><LoadingSkeleton /></div>;
+
+  if (!card || topics.length === 0) {
+    return <p className="text-slate-500 text-center py-12">Không có từ vựng cho lớp này</p>;
+  }
 
   return (
     <div>

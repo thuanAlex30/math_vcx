@@ -126,6 +126,16 @@ export const gradeListening = async (questions: ListeningQuestion[], answers: nu
   return data;
 };
 
+export const gradeReading = async (questions: ListeningQuestion[], answers: number[]) => {
+  const { data } = await client.post<{
+    score: number;
+    correct: number;
+    total: number;
+    results: (ListeningQuestion & { userAnswer: number; isCorrect: boolean })[];
+  }>('/english/reading/grade', { questions, answers });
+  return data;
+};
+
 export const generateReading = async (grade: EnglishGrade, level?: EnglishLevel) => {
   const { data } = await client.post<{
     title: string;
@@ -141,35 +151,130 @@ export const englishChat = async (
   messages: ChatMessage[],
   grade: EnglishGrade,
   role: ChatRole,
-  level?: EnglishLevel
+  level?: EnglishLevel,
+  topicId?: string
 ) => {
   const { data } = await client.post<{ reply: string }>('/english/chat', {
     messages,
     grade,
     role,
     level,
+    topicId,
   });
   return data;
 };
 
 export const fetchLeaderboard = async () => {
   const { data } = await client.get<{ leaderboard: LeaderboardEntry[] }>('/english/leaderboard');
-  return data.leaderboard.map((e) =>
-    e.isUser ? { ...e, xp: useUserXp(), name: 'Bạn' } : e
-  );
+  return data.leaderboard.map((e) => {
+    if (e.isUser) {
+      const userXp = (() => {
+        try {
+          const raw = localStorage.getItem('english-progress');
+          return raw ? (JSON.parse(raw).state?.xp ?? 0) : 0;
+        } catch { return 0; }
+      })();
+      return { ...e, xp: userXp, name: 'Bạn' };
+    }
+    return e;
+  });
 };
-
-function useUserXp() {
-  try {
-    const raw = localStorage.getItem('english-progress');
-    if (raw) return JSON.parse(raw).state?.xp ?? 0;
-  } catch {
-    /* ignore */
-  }
-  return 0;
-}
 
 export const englishTts = async (text: string, speed = 1, voice: 'female' | 'male' = 'female') => {
   const { data } = await client.post('/tts', { text, speed, voice, lang: 'en' });
+  return data;
+};
+
+// ============================================
+// ENGLISH LEADERBOARD & STATS — Real data từ MongoDB
+// ============================================
+
+export interface EnglishStatsPayload {
+  xp?: number;
+  level?: number;
+  streak?: number;
+  lastStudyDate?: string | null;
+  wordsLearned?: number;
+  pronunciationScore?: number;
+  listeningScore?: number;
+  writingScore?: number;
+  totalStudyMinutes?: number;
+  weeklyProgress?: number[];
+  skillsPracticed?: {
+    vocab?: number; grammar?: number; pronunciation?: number;
+    listening?: number; reading?: number; writing?: number; chat?: number;
+  };
+}
+
+export interface EnglishStatsFromBackend {
+  xp: number;
+  level: number;
+  streak: number;
+  lastStudyDate: string | null;
+  wordsLearned: number;
+  pronunciationScore: number;
+  listeningScore: number;
+  writingScore: number;
+  totalStudyMinutes: number;
+  weeklyProgress: number[];
+  skillsPracticed: {
+    vocab: number; grammar: number; pronunciation: number;
+    listening: number; reading: number; writing: number; chat: number;
+  };
+}
+
+export const fetchEnglishStatsMe = async () => {
+  const { data } = await client.get<EnglishStatsFromBackend>('/english/stats/me');
+  return data;
+};
+
+export const syncEnglishStatsFromBackend = async (stats: EnglishStatsPayload) => {
+  const { data } = await client.post<{ ok: boolean; xp: number; level: number }>(
+    '/english/stats/sync',
+    stats
+  );
+  return data;
+};
+
+// ============================================
+// VOCAB SRS — Sync với MongoDB
+// ============================================
+
+export interface VocabSrsCardPayload {
+  wordId: string;
+  word: string;
+  topicId: string;
+  interval?: number;
+  easeFactor?: number;
+  repetitions?: number;
+  nextReviewDate: string;
+  lastReviewDate?: string;
+  createdAt?: string;
+  ipa?: string;
+  meaning?: string;
+  example?: string;
+}
+
+export const fetchVocabSrsCards = async () => {
+  const { data } = await client.get<{ cards: VocabSrsCardPayload[]; dueCount: number; totalCount: number }>('/vocab-sr');
+  return data;
+};
+
+export const syncVocabSrsCards = async (cards: VocabSrsCardPayload[]) => {
+  const { data } = await client.post<{ ok: boolean; syncedCount: number; totalCards: number }>(
+    '/vocab-sr/sync',
+    { cards }
+  );
+  return data;
+};
+
+export const updateVocabSrsCard = async (
+  wordId: string,
+  update: Partial<VocabSrsCardPayload>
+) => {
+  const { data } = await client.put<{ ok: boolean; card: VocabSrsCardPayload }>(
+    `/vocab-sr/${encodeURIComponent(wordId)}`,
+    update
+  );
   return data;
 };

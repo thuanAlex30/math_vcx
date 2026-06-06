@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { MathText } from '../utils/mathRender';
-import 'katex/dist/katex.min.css';
 import {
   ClipboardList,
   Loader2,
@@ -12,6 +10,8 @@ import {
   XCircle,
   Sparkles,
 } from 'lucide-react';
+import { MathText } from '../utils/mathRender';
+import 'katex/dist/katex.min.css';
 import GradeSubjectSelector from './GradeSubjectSelector';
 import { useGradeStore } from '../store/gradeStore';
 import { useSubjectStore } from '../store/subjectStore';
@@ -27,6 +27,7 @@ import {
 import { useMathGamificationStore } from '../store/mathGamificationStore';
 import { useDailyPlanStore } from '../store/dailyPlanStore';
 import { useDashboardStore } from '../store/dashboardStore';
+import { MathContent } from '../components/MathContent';
 
 const PRACTICE_STORAGE_KEY = 'giasu-practice-session';
 
@@ -328,11 +329,10 @@ const PracticeMode: React.FC<{ initialTopic?: string }> = ({ initialTopic }) => 
                   <span className="shrink-0 w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 flex items-center justify-center text-sm font-bold">
                     {qIndex + 1}
                   </span>
-                  <MathText
-                    text={q.question}
-                    as="p"
-                    className="font-semibold text-base leading-snug pt-1 flex-1 min-w-0"
-                  />
+                <MathContent
+                  text={q.question}
+                  className="font-semibold text-base leading-snug pt-1 flex-1 min-w-0"
+                />
                   {submitted && (
                     <span className="ml-auto shrink-0">
                       {isCorrect ? (
@@ -371,10 +371,10 @@ const PracticeMode: React.FC<{ initialTopic?: string }> = ({ initialTopic }) => 
                           disabled={submitted}
                           className="accent-brand-600 w-4 h-4 shrink-0"
                         />
-                        <MathText
-                          text={formatOptionLabel(opt, optIndex)}
-                          className="flex-1 min-w-0"
-                        />
+                      <MathContent
+                        text={formatOptionLabel(opt, optIndex)}
+                        className="flex-1 min-w-0"
+                      />
                       </label>
                     );
                   })}
@@ -383,12 +383,12 @@ const PracticeMode: React.FC<{ initialTopic?: string }> = ({ initialTopic }) => 
                 {submitted && isWrong && (
                   <div className="mt-4 ml-10 text-sm text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 rounded-xl p-3">
                     <span className="font-semibold text-brand-600">Giải thích: </span>
-                    <MathText text={q.explanation} className="inline" />
+                    <MathContent text={q.explanation} className="inline" />
                   </div>
                 )}
                 {submitted && isCorrect && q.explanation && (
                   <div className="mt-3 ml-10 text-xs text-emerald-700 dark:text-emerald-400">
-                    <MathText text={q.explanation} />
+                    <MathContent text={q.explanation} />
                   </div>
                 )}
               </div>

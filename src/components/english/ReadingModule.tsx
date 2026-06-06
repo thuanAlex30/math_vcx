@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { BookOpen, Loader2, CheckCircle2, XCircle } from 'lucide-react';
-import { generateReading } from '../../services/englishApi';
+import { generateReading, gradeReading } from '../../services/englishApi';
 import { useEnglishStore } from '../../store/englishStore';
 import { useGradeStore, type Grade } from '../../store/gradeStore';
 import EnglishAudioPlayer from './EnglishAudioPlayer';
 import type { ListeningQuestion } from '../../types/english';
+import LoadingSkeleton from '../LoadingSkeleton';
 
 const ReadingModule: React.FC = () => {
   const { grade } = useGradeStore();
@@ -19,7 +20,7 @@ const ReadingModule: React.FC = () => {
   const [answers, setAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { level, addXp } = useEnglishStore();
+  const { level, addXp, updateScores } = useEnglishStore();
 
   const generate = async () => {
     setLoading(true);
@@ -34,15 +35,41 @@ const ReadingModule: React.FC = () => {
     }
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!lesson) return;
-    let correct = 0;
-    lesson.questions.forEach((q, i) => {
-      if (answers[i] === q.answer) correct++;
-    });
-    const score = Math.round((correct / lesson.questions.length) * 100);
-    addXp(score / 2);
-    setShowResults(true);
+    const unanswered = lesson.questions.findIndex((_, i) => answers[i] == null);
+    if (unanswered !== -1) {
+      toast.error(`Chưa trả lời câu ${unanswered + 1}`);
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await gradeReading(lesson.questions, answers);
+      setShowResults(true);
+      updateScores({ reading: res.score });
+      addXp(Math.round(res.score / 2));
+      setLesson((prev) =>
+        prev
+          ? {
+              ...prev,
+              questions: prev.questions.map((q, i) => ({
+                ...q,
+                answer: res.results[i]?.isCorrect
+                  ? q.answer
+                  : q.answer,
+              })),
+            }
+          : prev
+      );
+      // Hiện kết quả bằng kết quả backend
+      setAnswers((prev) =>
+        prev.map((a, i) => (res.results[i]?.isCorrect ? a : (a ?? 0)))
+      );
+    } catch {
+      toast.error('Không chấm được bài đọc');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,6 +82,12 @@ const ReadingModule: React.FC = () => {
       <button type="button" onClick={generate} disabled={loading} className="btn-primary w-full bg-emerald-600">
         {loading ? <Loader2 className="animate-spin mx-auto" /> : 'Tạo bài đọc hiểu mới'}
       </button>
+
+      {loading && !lesson && (
+        <div className="card p-6 space-y-4">
+          <LoadingSkeleton />
+        </div>
+      )}
 
       {lesson && (
         <div className="card p-6 space-y-5">

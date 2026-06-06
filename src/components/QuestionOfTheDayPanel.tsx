@@ -1,36 +1,20 @@
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { Zap, Trophy, Flame, Calendar } from 'lucide-react';
-import * as socialApi from '../services/socialApi';
-
-interface QotDQuestion {
-  _id: string;
-  problem: string;
-  difficulty: string;
-  topic: string;
-  explanation?: string;
-}
-
-interface QotDStats {
-  correctCount: number;
-  streak: number;
-  totalPoints: number;
-  successRate: number | string;
-  last7Days: Array<{ date: string; correct: boolean; points: number }>;
-}
-
-interface LeaderboardEntry {
-  userId: string;
-  name: string;
-  todayCorrect: boolean;
-  todayPoints: number;
-  totalStreak: number;
-  totalPoints: number;
-}
+import {
+  getTodayQuestion,
+  submitQotDAnswer,
+  getUserQotDStats,
+  getQotDLeaderboard,
+  type QotDQuestion,
+  type QotDStats,
+  type QotDLeaderboardEntry,
+} from '../services/socialApi';
 
 export const QuestionOfTheDayPanel: React.FC = () => {
   const [question, setQuestion] = useState<QotDQuestion | null>(null);
   const [stats, setStats] = useState<QotDStats | null>(null);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboard, setLeaderboard] = useState<QotDLeaderboardEntry[]>([]);
   const [userAnswer, setUserAnswer] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -46,7 +30,7 @@ export const QuestionOfTheDayPanel: React.FC = () => {
   const loadQuestion = async () => {
     try {
       setLoading(true);
-      const data = await socialApi.getTodayQuestion();
+      const data = await getTodayQuestion();
       setQuestion(data.question);
       setStartTime(Date.now());
       setUserAnswer('');
@@ -61,7 +45,7 @@ export const QuestionOfTheDayPanel: React.FC = () => {
 
   const loadStats = async () => {
     try {
-      const data = await socialApi.getUserQotDStats();
+      const data = await getUserQotDStats();
       setStats(data.stats);
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -71,7 +55,7 @@ export const QuestionOfTheDayPanel: React.FC = () => {
   const loadLeaderboard = async () => {
     try {
       setLoading(true);
-      const data = await socialApi.getQotDLeaderboard();
+      const data = await getQotDLeaderboard();
       setLeaderboard(data.leaderboard.leaderboard || []);
     } catch (error) {
       console.error('Error loading leaderboard:', error);
@@ -82,20 +66,26 @@ export const QuestionOfTheDayPanel: React.FC = () => {
 
   const handleSubmitAnswer = async () => {
     if (!userAnswer.trim()) {
-      alert('Vui lòng nhập câu trả lời');
+      toast.error('Vui lòng nhập câu trả lời');
       return;
     }
 
     try {
       setLoading(true);
       const timeSeconds = Math.floor((Date.now() - startTime) / 1000);
-      const data = await socialApi.submitQotDAnswer(userAnswer, timeSeconds);
+      const data = await submitQotDAnswer(userAnswer, timeSeconds);
       setResult(data.result);
       setSubmitted(true);
       loadStats();
     } catch (error) {
-      console.error('Error submitting answer:', error);
-      alert('Lỗi khi gửi câu trả lời. Bạn có thể đã gửi câu trả lời cho hôm nay.');
+      const err = error as { response?: { status?: number; data?: { error?: string } } };
+      if (err.response?.status === 409) {
+        setSubmitted(true);
+        setResult(null);
+        toast.success('Bạn đã trả lời hôm nay rồi!');
+      } else {
+        toast.error('Lỗi khi gửi câu trả lời. Thử lại sau nhé.');
+      }
     } finally {
       setLoading(false);
     }

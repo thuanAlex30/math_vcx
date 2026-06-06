@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -19,10 +19,12 @@ import HistoryPage from './pages/HistoryPage';
 import DashboardPage from './pages/DashboardPage';
 import EnglishHubPage from './pages/EnglishHubPage';
 import AuthPage from './pages/AuthPage';
+import ProfilePage from './pages/ProfilePage';
 import { useOnboardingStore } from './store/onboardingStore';
 import { useAuthStore } from './store/authStore';
 
-const ExamPage = React.lazy(() => import('./pages/ExamPage'));
+const ExamPage = lazy(() => import('./pages/ExamPage'));
+const DemoFeaturesPage = lazy(() => import('./pages/DemoFeaturesPage'));
 
 const queryClient = new QueryClient();
 
@@ -130,11 +132,29 @@ function AppContent() {
           }
         />
         <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/exam"
           element={
             <ProtectedRoute>
               <Suspense fallback={<div className="pt-24 text-center text-slate-500">Đang tải...</div>}>
                 <ExamPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/demo-features"
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<div className="pt-24 text-center text-slate-500">Đang tải...</div>}>
+                <DemoFeaturesPage />
               </Suspense>
             </ProtectedRoute>
           }

@@ -28,19 +28,25 @@ const PronunciationModule: React.FC = () => {
   }, [grade]);
 
   useEffect(() => {
-    fetchPronunciationPractice(grade as Grade, unitId || undefined).then((p) => {
-      setUnits(p.units || []);
-      if (!unitId) {
-        setUnitId(p.unitId || p.units?.[0]?.id || '');
-      }
-      setUnitTitle(p.unitTitle || p.units?.[0]?.title || '');
-      setSentences(p.sentences.length ? p.sentences : ['Hello, how are you?']);
-      setDescription(p.description);
-      setSentenceIdx(0);
-      setResult(null);
-      setTranscript('');
-    });
-  }, [grade, unitId]);
+    fetchPronunciationPractice(grade as Grade, unitId || undefined)
+      .then((p) => {
+        setUnits(p.units || []);
+        if (!unitId) {
+          setUnitId(p.unitId || p.units?.[0]?.id || '');
+        }
+        setUnitTitle(p.unitTitle || p.units?.[0]?.title || '');
+        setSentences(p.sentences.length ? p.sentences : ['Hello, how are you?']);
+        setDescription(p.description);
+        setSentenceIdx(0);
+        setResult(null);
+        setTranscript('');
+      })
+      .catch(() => {
+        toast.error('Không tải được bài phát âm');
+        // Fallback: hiện giao diện trống thay vì hardcode mock sentence
+        setSentences([]);
+      });
+  }, [grade]);
 
   const expected = sentences[sentenceIdx] ?? '';
 

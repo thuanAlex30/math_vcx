@@ -21,13 +21,20 @@ const EnglishChatModule: React.FC = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [topicHint, setTopicHint] = useState('');
+  const [activeTopicId, setActiveTopicId] = useState<string | undefined>(undefined);
   const endRef = useRef<HTMLDivElement>(null);
-  const { level, chatRole, setChatRole, addXp } = useEnglishStore();
+  const { level, chatRole, setChatRole, updateScores, recordChat, addXp } = useEnglishStore();
 
   useEffect(() => {
     fetchEnglishCurriculum(grade as Grade).then((c) => {
       setTopicHint(c.conversation.topicHint);
+      // Lấy topic đầu tiên để gửi context cho AI chat
+      if (c.vocabulary.topics.length > 0) {
+        setActiveTopicId(c.vocabulary.topics[0]);
+      }
       setMessages([]);
+    }).catch(() => {
+      // fallback không crash UI
     });
   }, [grade]);
 
@@ -44,8 +51,9 @@ const EnglishChatModule: React.FC = () => {
     setInput('');
     setLoading(true);
     try {
-      const { reply } = await englishChat(next, grade as Grade, chatRole, level);
+      const { reply } = await englishChat(next, grade as Grade, chatRole, level, activeTopicId);
       setMessages([...next, { role: 'assistant', content: reply }]);
+      recordChat();
       addXp(10);
     } catch {
       toast.error('Không gửi được tin nhắn');
@@ -93,7 +101,9 @@ const EnglishChatModule: React.FC = () => {
             <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm ${
               m.role === 'user' ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800'
             }`}>
-              {m.role === 'assistant' ? <MathMarkdown content={m.content} /> : m.content}
+              {m.role === 'assistant'
+                ? <p className="whitespace-pre-wrap">{m.content}</p>
+                : m.content}
             </div>
           </div>
         ))}

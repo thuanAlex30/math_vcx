@@ -12,6 +12,7 @@ import {
   X,
   Sparkles,
   Languages,
+  Users,
 } from 'lucide-react';
 import { useDailyPlanStore } from '../store/dailyPlanStore';
 import SubjectSwitcher from './SubjectSwitcher';
@@ -44,12 +45,14 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode, setDarkMode }) => {
     { path: '/tutor', icon: MessageCircle, label: 'Học Toán' },
     { path: '/history', icon: History, label: 'Lịch sử' },
     { path: '/dashboard', icon: LayoutDashboard, label: 'Tiến độ' },
+    { path: '/demo-features', icon: Users, label: 'Xã hội' },
   ];
 
   const englishNav = [
     { path: '/', icon: Brain, label: 'Trang chủ' },
     { path: '/english', icon: Languages, label: 'Học Anh' },
     { path: '/dashboard', icon: LayoutDashboard, label: 'Tiến độ' },
+    { path: '/demo-features', icon: Users, label: 'Xã hội' },
   ];
 
   const navItems = subject === 'english' ? englishNav : mathNav;

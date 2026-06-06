@@ -7,6 +7,7 @@ import { useOnboardingStore } from '../../store/onboardingStore';
 import { joinClassLeaderboard, getStudentSessionId } from '../../services/api';
 import { useEnglishStore } from '../../store/englishStore';
 import { useMathGamificationStore } from '../../store/mathGamificationStore';
+import ConfirmModal from '../ConfirmModal';
 
 const LearningPreferences: React.FC = () => {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -16,6 +17,7 @@ const LearningPreferences: React.FC = () => {
   const [displayName, setDisplayName] = useState(
     () => useOnboardingStore.getState().name || 'Học sinh'
   );
+  const [showImportModal, setShowImportModal] = useState(false);
   const { dataSaver, setDataSaver, preferredFormat } = useLearningStyleStore();
   const { name } = useOnboardingStore();
   const { xp } = useEnglishStore();
@@ -24,12 +26,20 @@ const LearningPreferences: React.FC = () => {
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!window.confirm('Nhập hồ sơ sẽ ghi đè dữ liệu hiện tại. Em chắc chứ?')) return;
+    setShowImportModal(true);
+  };
+
+  const confirmImport = async () => {
+    const file = fileRef.current?.files?.[0];
+    if (!file) return;
     try {
       await importProfileJson(file);
       toast.success('Đã nhập hồ sơ! Tải lại trang để áp dụng.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lỗi nhập hồ sơ');
+    } finally {
+      setShowImportModal(false);
+      if (fileRef.current) fileRef.current.value = '';
     }
   };
 
@@ -53,7 +63,8 @@ const LearningPreferences: React.FC = () => {
   };
 
   return (
-    <div className="card p-6 space-y-6">
+    <>
+      <div className="card p-6 space-y-6">
       <h3 className="font-bold flex items-center gap-2">
         <Settings className="w-5 h-5" /> Cài đặt học tập
       </h3>
@@ -123,6 +134,21 @@ const LearningPreferences: React.FC = () => {
         <p className="text-xs text-slate-400 mt-2">Session: {getStudentSessionId().slice(0, 8)}...</p>
       </div>
     </div>
+
+    <ConfirmModal
+      open={showImportModal}
+      title="Nhập hồ sơ"
+      message="Nhập hồ sơ sẽ ghi đè dữ liệu hiện tại trên thiết bị này. Em chắc chứ?"
+      confirmLabel="Nhập hồ sơ"
+      cancelLabel="Hủy bỏ"
+      variant="danger"
+      onConfirm={confirmImport}
+      onCancel={() => {
+        setShowImportModal(false);
+        if (fileRef.current) fileRef.current.value = '';
+      }}
+    />
+    </>
   );
 };
 

@@ -19,6 +19,8 @@ import {
   getStudentSessionId,
   recordTopicResult,
   checkMathWriting,
+  fetchProfile,
+  type WeakTopic,
 } from '../services/api';
 import { useTutorStore } from '../store/tutorStore';
 import { useHistoryStore, detectTopic } from '../store/historyStore';
@@ -103,6 +105,7 @@ const TutorPage: React.FC = () => {
   const [writingResult, setWritingResult] = useState<{ score: number; feedback: string } | null>(null);
   const [writingLoading, setWritingLoading] = useState(false);
   const [showWriting, setShowWriting] = useState(false);
+  const [weakTopics, setWeakTopics] = useState<WeakTopic[]>([]);
 
   const studentContext = {
     ...buildStudentContext(),
@@ -116,6 +119,10 @@ const TutorPage: React.FC = () => {
 
   useEffect(() => {
     incrementSession();
+    // Load weak topics từ Graph RAG profile
+    fetchProfile(getStudentSessionId())
+      .then((p) => setWeakTopics(p.weakTopics || []))
+      .catch(() => {});
   }, [incrementSession]);
 
   const runSolve = async (opts: { mode: SolveMode; skipProfileUpdate?: boolean; profileCorrect?: boolean }) => {
@@ -332,6 +339,37 @@ const TutorPage: React.FC = () => {
             <div className="card p-4">
               <GradeSubjectSelector showSubject={false} />
             </div>
+
+            {weakTopics.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card p-4 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-amber-500 text-lg">⚠️</span>
+                  <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase">
+                    Gợi ý: Chủ đề em đang yếu
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {weakTopics.slice(0, 4).map((t) => (
+                    <span
+                      key={t.id}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        t.severity === 'high'
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                          : t.severity === 'medium'
+                          ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
+                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'
+                      }`}
+                    >
+                      {t.name}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
             <div className="card p-4">
               <p className="text-xs font-semibold text-slate-500 uppercase mb-3">Chế độ giải</p>
