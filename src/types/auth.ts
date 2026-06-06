@@ -1,3 +1,5 @@
+import type { EnglishStatsPayload } from '../services/englishApi';
+
 export type UserRole = 'student' | 'teacher';
 
 export interface User {
@@ -8,4 +10,5 @@ export interface User {
   role: UserRole;
   grade: number | null;
   createdAt: string;
+  englishStats?: EnglishStatsPayload;
 }

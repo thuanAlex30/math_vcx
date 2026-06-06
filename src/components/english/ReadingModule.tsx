@@ -20,7 +20,8 @@ const ReadingModule: React.FC = () => {
   const [answers, setAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { level, addXp, updateScores } = useEnglishStore();
+  const { effectiveLevel, addXp, updateScores } = useEnglishStore();
+  const level = effectiveLevel();
 
   const generate = async () => {
     setLoading(true);

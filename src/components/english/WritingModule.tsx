@@ -43,7 +43,7 @@ const WritingModule: React.FC = () => {
       const res = await checkWriting(text, grade as Grade, level);
       setResult(res);
       updateScores({ writing: res.score });
-      addXp(res.score / 3);
+      addXp(Math.round(res.score / 3));
       const suggestion = recordAdaptiveScore(res.score);
       if (suggestion === 'up') setLevelModal('up');
       else if (suggestion === 'down') setLevelModal('down');

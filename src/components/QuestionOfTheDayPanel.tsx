@@ -38,6 +38,7 @@ export const QuestionOfTheDayPanel: React.FC = () => {
       setResult(null);
     } catch (error) {
       console.error('Error loading question:', error);
+      toast.error('Không tải được câu hỏi hôm nay');
     } finally {
       setLoading(false);
     }

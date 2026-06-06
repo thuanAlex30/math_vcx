@@ -5,6 +5,7 @@ import { fetchPronunciationPractice, scorePronunciation } from '../../services/e
 import { useEnglishStore } from '../../store/englishStore';
 import { useGradeStore, type Grade } from '../../store/gradeStore';
 import EnglishAudioPlayer from './EnglishAudioPlayer';
+import LoadingSkeleton from '../LoadingSkeleton';
 import type { PronunciationResult, PronunciationUnit } from '../../types/english';
 
 const PronunciationModule: React.FC = () => {
@@ -19,6 +20,7 @@ const PronunciationModule: React.FC = () => {
   const [transcript, setTranscript] = useState('');
   const [result, setResult] = useState<PronunciationResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [initLoading, setInitLoading] = useState(true);
   const recognitionRef = useRef<{ stop: () => void; start: () => void } | null>(null);
   const { effectiveLevel, addXp, updateScores } = useEnglishStore();
   const level = effectiveLevel();
@@ -43,9 +45,9 @@ const PronunciationModule: React.FC = () => {
       })
       .catch(() => {
         toast.error('Không tải được bài phát âm');
-        // Fallback: hiện giao diện trống thay vì hardcode mock sentence
         setSentences([]);
-      });
+      })
+      .finally(() => setInitLoading(false));
   }, [grade]);
 
   const expected = sentences[sentenceIdx] ?? '';
@@ -97,7 +99,10 @@ const PronunciationModule: React.FC = () => {
     }
   };
 
-  if (!expected) return <p className="text-slate-500">Đang tải...</p>;
+  if (!expected) {
+    if (initLoading) return <div className="max-w-xl mx-auto space-y-4"><LoadingSkeleton /></div>;
+    return <p className="text-slate-500">Không tải được bài — thử lại.</p>;
+  }
 
   return (
     <div className="max-w-xl mx-auto space-y-6">

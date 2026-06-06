@@ -68,7 +68,7 @@ const ProfilePage: React.FC = () => {
   const { name, goals, studySlots, dailyMinutes, preferredStyle } = useOnboardingStore();
   const { xp, streak, badges, wordsLearned, weeklyProgress, pronunciationScore, listeningScore, writingScore, readingScore } = useEnglishStore();
   const { grade, setGrade } = useGradeStore();
-  const { points, streak: mathStreak } = useMathGamificationStore();
+  const { points } = useMathGamificationStore();
   const { history } = useHistoryStore();
   const { dataSaver } = useLearningStyleStore();
   const englishLevel = levelFromXp(xp);
@@ -85,7 +85,19 @@ const ProfilePage: React.FC = () => {
   const totalSolved = history.length;
   const thisWeekXp = weeklyProgress.reduce((a, b) => a + b, 0);
 
-  const skillScores = { pronunciation: pronunciationScore, listening: listeningScore, writing: writingScore, reading: readingScore };
+  const skillScores = {
+    pronunciation: pronunciationScore,
+    listening: listeningScore,
+    writing: writingScore,
+    reading: readingScore,
+  };
+  const skillsData: Record<string, { label: string; value: number; unit: string }> = {
+    vocabulary: { label: 'Từ vựng', value: wordsLearned, unit: 'từ' },
+    pronunciation: { label: 'Phát âm', value: skillScores.pronunciation, unit: '' },
+    listening: { label: 'Nghe', value: skillScores.listening, unit: '' },
+    writing: { label: 'Viết', value: skillScores.writing, unit: '' },
+    reading: { label: 'Đọc', value: skillScores.reading, unit: '' },
+  };
 
   const handleSaveName = () => {
     const { completeOnboarding } = useOnboardingStore.getState();
@@ -230,10 +242,7 @@ const ProfilePage: React.FC = () => {
             Kỹ năng Tiếng Anh
           </h2>
           <div className="space-y-3">
-            {Object.entries({
-              vocabulary: { label: 'Từ vựng', value: wordsLearned, unit: 'từ' },
-              ...skillScores,
-            }).map(([id, s]: [string, { label: string; value: number; unit: string }]) => (
+            {Object.entries(skillsData).map(([id, s]) => (
               <div key={id} className="flex items-center gap-3">
                 <span className="w-8 text-center">{SKILL_ICONS[id] || '📘'}</span>
                 <div className="flex-1">
@@ -363,7 +372,7 @@ const ProfilePage: React.FC = () => {
               <span className="text-sm text-slate-600 dark:text-slate-400">Lớp</span>
               <select
                 value={grade}
-                onChange={(e) => setGrade(Number(e.target.value))}
+                onChange={(e) => setGrade(Number(e.target.value) as 6 | 7 | 8 | 9 | 10 | 11 | 12)}
                 className="input-field w-auto text-sm py-1"
               >
                 {GRADES.map((g) => (

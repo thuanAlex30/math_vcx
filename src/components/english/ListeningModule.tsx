@@ -88,7 +88,7 @@ const ListeningModule: React.FC = () => {
             <Headphones className="w-5 h-5" />
             {lesson.title}
           </div>
-          <EnglishAudioPlayer text={lesson.audioScript} speed={playbackSpeed} />
+          <EnglishAudioPlayer text={lesson.title} speed={playbackSpeed} />
           <p className="text-sm text-slate-500 italic border-l-4 border-emerald-400 pl-3">
             {lesson.audioScript}
           </p>
