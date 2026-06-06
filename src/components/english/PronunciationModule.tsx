@@ -126,7 +126,7 @@ const PronunciationModule: React.FC = () => {
 
       <p className="text-sm text-slate-500 text-center">{description}</p>
       <div className="card p-8 text-center border-2 border-emerald-200/50">
-        <p className="text-xs uppercase tracking-wider text-emerald-600 font-bold mb-2">
+        <p className="text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-bold mb-2">
           Lớp {grade} · {unitTitle || 'Phát âm'}
         </p>
         <p className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">{expected}</p>
@@ -149,7 +149,7 @@ const PronunciationModule: React.FC = () => {
       {transcript && (
         <div className="card p-4">
           <p className="text-sm text-slate-500 mb-1">Bạn đã đọc:</p>
-          <p className="font-medium">{transcript}</p>
+          <p className="font-medium dark:text-slate-200">{transcript}</p>
         </div>
       )}
 
@@ -162,8 +162,8 @@ const PronunciationModule: React.FC = () => {
       {result && (
         <div className="card p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="font-bold">Điểm phát âm</span>
-            <span className="text-3xl font-extrabold text-emerald-600">{result.score}/100</span>
+            <span className="font-bold dark:text-slate-200">Điểm phát âm</span>
+            <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{result.score}/100</span>
           </div>
           {result.wrongWords?.length > 0 && (
             <div>

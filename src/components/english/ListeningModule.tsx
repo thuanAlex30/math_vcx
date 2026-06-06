@@ -84,7 +84,7 @@ const ListeningModule: React.FC = () => {
 
       {lesson && (
         <div className="card p-6 space-y-4">
-          <div className="flex items-center gap-2 text-emerald-600 font-bold">
+          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
             <Headphones className="w-5 h-5" />
             {lesson.title}
           </div>
@@ -95,7 +95,7 @@ const ListeningModule: React.FC = () => {
 
           {lesson.questions.map((q, i) => (
             <div key={i} className="space-y-2">
-              <p className="font-medium">{i + 1}. {q.question}</p>
+              <p className="font-medium dark:text-slate-200">{i + 1}. {q.question}</p>
               <div className="grid gap-2">
                 {q.options.map((opt, j) => (
                   <button
@@ -118,7 +118,7 @@ const ListeningModule: React.FC = () => {
                 ))}
               </div>
               {graded?.results[i] && (
-                <div className={`text-sm flex items-start gap-2 ${graded.results[i].isCorrect ? 'text-emerald-600' : 'text-red-500'}`}>
+                <div className={`text-sm flex items-start gap-2 ${graded.results[i].isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
                   {graded.results[i].isCorrect ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
                   {graded.results[i].explanation}
                 </div>
@@ -133,7 +133,7 @@ const ListeningModule: React.FC = () => {
           )}
           {graded && (
             <div className="text-center p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40">
-              <p className="text-2xl font-extrabold text-emerald-600">{graded.score} điểm</p>
+              <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{graded.score} điểm</p>
             </div>
           )}
         </div>

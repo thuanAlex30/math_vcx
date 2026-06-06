@@ -103,14 +103,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               {msg.role === 'user' ? (
                 <User className="w-4 h-4" />
               ) : (
-                <Bot className="w-4 h-4 text-emerald-600" />
+                <Bot className="w-4 h-4 text-slate-600 dark:text-slate-300" />
               )}
             </div>
             <div
               className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm ${
                 msg.role === 'user'
                   ? 'bg-brand-600 text-white rounded-tr-md'
-                  : 'bg-slate-100 dark:bg-slate-800 rounded-tl-md border border-slate-200/50 dark:border-slate-700/50'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-md border border-slate-200/50 dark:border-slate-700/50'
               }`}
             >
               {msg.role === 'assistant' ? (

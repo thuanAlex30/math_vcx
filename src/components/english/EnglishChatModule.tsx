@@ -109,7 +109,7 @@ const EnglishChatModule: React.FC = () => {
         ))}
         {loading && (
           <div className="flex gap-2 text-slate-500 text-sm">
-            <Loader2 className="w-4 h-4 animate-spin" /> Đang trả lời...
+            <Loader2 className="w-4 h-4 animate-spin text-slate-500 dark:text-slate-400" /> <span className="text-slate-600 dark:text-slate-300">Đang trả lời...</span>
           </div>
         )}
         <div ref={endRef} />

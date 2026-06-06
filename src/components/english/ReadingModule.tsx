@@ -104,7 +104,7 @@ const ReadingModule: React.FC = () => {
 
           {lesson.questions.map((q, i) => (
             <div key={i}>
-              <p className="font-medium mb-2">{i + 1}. {q.question}</p>
+              <p className="font-medium mb-2 dark:text-slate-200">{i + 1}. {q.question}</p>
               <div className="grid gap-2">
                 {q.options.map((opt, j) => {
                   const selected = answers[i] === j;
@@ -121,7 +121,7 @@ const ReadingModule: React.FC = () => {
                         setAnswers(a);
                       }}
                       className={`text-left p-3 rounded-xl border text-sm flex items-center gap-2 ${
-                        correct ? 'border-emerald-500 bg-emerald-50' : wrong ? 'border-red-400 bg-red-50' : selected ? 'border-emerald-400' : 'border-slate-200 dark:border-slate-700'
+                        correct ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 dark:border-emerald-600' : wrong ? 'border-red-400 bg-red-50 dark:bg-red-900/30 dark:border-red-500' : selected ? 'border-emerald-400' : 'border-slate-200 dark:border-slate-700'
                       }`}
                     >
                       {showResults && correct && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}

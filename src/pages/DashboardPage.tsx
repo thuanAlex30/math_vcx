@@ -192,7 +192,7 @@ const DashboardPage: React.FC = () => {
                 {name ? `Chào ${name}! ` : ''}Theo dõi Toán & Tiếng Anh · Lớp {grade}
               </p>
               {preferredFormat && (
-                <p className="text-sm text-brand-600 ml-14 mt-1">
+                <p className="text-sm text-brand-600 dark:text-brand-400 ml-14 mt-1">
                   Gợi ý: em học tốt hơn khi {preferredFormatLabel(preferredFormat)}!
                 </p>
               )}
@@ -238,7 +238,7 @@ const DashboardPage: React.FC = () => {
 
         {showMath && (
           <>
-            <h2 className="text-lg font-bold flex items-center gap-2 mb-4 text-brand-600">
+            <h2 className="text-lg font-bold flex items-center gap-2 mb-4 text-brand-600 dark:text-brand-400">
               <Calculator className="w-5 h-5" /> Toán học
             </h2>
 
@@ -260,7 +260,7 @@ const DashboardPage: React.FC = () => {
                     <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${s.gradient} flex items-center justify-center mb-4 shadow-md`}>
                       <Icon className="w-5 h-5 text-white" />
                     </div>
-                    <p className="text-3xl font-extrabold">{s.value}</p>
+                    <p className="text-3xl font-extrabold dark:text-slate-100">{s.value}</p>
                     <p className="text-sm text-slate-500 font-medium">{s.label}</p>
                   </motion.div>
                 );
@@ -293,14 +293,14 @@ const DashboardPage: React.FC = () => {
               </div>
 
               <div className="card p-6 lg:p-8 flex flex-col">
-                <h2 className="text-lg font-bold mb-4">Toán — vừa học gần đây</h2>
+                <h2 className="text-lg font-bold mb-4 dark:text-slate-100">Toán — vừa học gần đây</h2>
                 {recent.length === 0 ? (
                   <p className="text-slate-500 text-sm flex-1">Chưa có hoạt động</p>
                 ) : (
                   <ul className="space-y-3 flex-1">
                     {recent.map((h) => (
                       <li key={h.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
-                        <p className="font-medium text-sm line-clamp-1">{h.question}</p>
+                        <p className="font-medium text-sm line-clamp-1 dark:text-slate-200">{h.question}</p>
                         <p className="text-xs text-slate-500 mt-1">
                           {new Date(h.timestamp).toLocaleDateString('vi-VN')}
                           {h.topic ? ` · ${h.topic}` : ''}
@@ -313,7 +313,7 @@ const DashboardPage: React.FC = () => {
                   <button type="button" onClick={() => navigate('/tutor')} className="btn-primary flex-1">
                     Tiếp tục học Toán
                   </button>
-                  <button type="button" onClick={() => navigate('/exam')} className="flex-1 py-3 rounded-xl border-2 border-brand-500 text-brand-600 font-bold text-sm">
+                  <button type="button" onClick={() => navigate('/exam')} className="flex-1 py-3 rounded-xl border-2 border-brand-500 text-brand-600 dark:border-brand-400 dark:text-brand-300 font-bold text-sm">
                     Thi thử THPT
                   </button>
                 </div>
@@ -324,7 +324,7 @@ const DashboardPage: React.FC = () => {
 
         {showEnglish && (
           <>
-            <h2 className="text-lg font-bold flex items-center gap-2 mb-4 text-emerald-600">
+            <h2 className="text-lg font-bold flex items-center gap-2 mb-4 text-emerald-600 dark:text-emerald-400">
               <Languages className="w-5 h-5" /> Tiếng Anh
             </h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -335,7 +335,7 @@ const DashboardPage: React.FC = () => {
                     <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${s.gradient} flex items-center justify-center mb-3 shadow-md`}>
                       <Icon className="w-5 h-5 text-white" />
                     </div>
-                    <p className="text-2xl font-extrabold">{s.value}</p>
+                    <p className="text-2xl font-extrabold dark:text-slate-100">{s.value}</p>
                     <p className="text-sm text-slate-500">{s.label}</p>
                   </motion.div>
                 );
@@ -345,7 +345,7 @@ const DashboardPage: React.FC = () => {
             <div className="grid lg:grid-cols-3 gap-6 mb-10">
               <div className="card p-6">
                 <p className="text-sm text-slate-500">Level {levelFromXp(xp)} · {xp} XP · Streak {enStreak} ngày</p>
-                <h3 className="font-bold mt-2 mb-4">Tiến độ tuần (XP)</h3>
+                <h3 className="font-bold mt-2 mb-4 dark:text-slate-200">Tiến độ tuần (XP)</h3>
                 <div className="flex items-end gap-2 h-24">
                   {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d, i) => {
                     const v = weeklyProgress[i] || 0;
@@ -378,7 +378,7 @@ const DashboardPage: React.FC = () => {
               </div>
 
               <div className="card p-6">
-                <h3 className="font-bold mb-4">Bảng xếp hạng</h3>
+                <h3 className="font-bold mb-4 dark:text-slate-200">Bảng xếp hạng</h3>
                 <ul className="space-y-2 text-sm">
                   {leaderboard.slice(0, 5).map((e) => (
                     <li key={e.rank} className={`flex justify-between p-2 rounded-lg ${e.isUser ? 'bg-emerald-50 dark:bg-emerald-950/40 font-bold' : ''}`}>
@@ -390,7 +390,7 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <button type="button" onClick={() => navigate('/english')} className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold mb-10">
+            <button type="button" onClick={() => navigate('/english')} className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 text-white font-bold mb-10">
               Tiếp tục học Tiếng Anh
             </button>
           </>

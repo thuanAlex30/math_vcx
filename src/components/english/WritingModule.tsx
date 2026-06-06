@@ -107,7 +107,7 @@ const WritingModule: React.FC = () => {
 
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="card p-6">
-          <h3 className="font-bold flex items-center gap-2 mb-2">
+          <h3 className="font-bold flex items-center gap-2 mb-2 dark:text-slate-200">
             <PenLine className="w-5 h-5 text-emerald-600" /> Bài viết · Lớp {grade}
           </h3>
           {loadingHint ? (
@@ -143,11 +143,11 @@ const WritingModule: React.FC = () => {
             <>
               <div className="card p-5">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="font-bold">Điểm</span>
+                  <span className="font-bold dark:text-slate-200">Điểm</span>
                   <span className="text-2xl font-extrabold text-emerald-600">{result.score}/100</span>
                 </div>
                 <p className="text-xs text-slate-500 mb-1">Văn bản đã sửa:</p>
-                <p className="text-sm leading-relaxed">{result.corrected}</p>
+                <p className="text-sm leading-relaxed dark:text-slate-200">{result.corrected}</p>
               </div>
               {result.errors?.length > 0 && (
                 <div className="card p-5 space-y-3">
@@ -168,7 +168,7 @@ const WritingModule: React.FC = () => {
               {result.suggestions?.length > 0 && (
                 <div className="card p-5">
                   <p className="font-bold text-sm mb-2">Gợi ý viết tự nhiên hơn</p>
-                  <ul className="text-sm list-disc pl-5 text-slate-600 space-y-1">
+                  <ul className="text-sm list-disc pl-5 text-slate-600 dark:text-slate-400 space-y-1">
                     {result.suggestions.map((s, i) => (
                       <li key={i}>{s}</li>
                     ))}

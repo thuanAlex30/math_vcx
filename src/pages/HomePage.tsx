@@ -231,7 +231,7 @@ const HomePage = () => {
               <button
                 type="button"
                 onClick={() => navigate('/english')}
-                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-lg hover:scale-105 transition"
+                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 text-white font-bold shadow-lg hover:scale-105 transition"
               >
                 Vào lớp Tiếng Anh
               </button>
@@ -292,7 +292,7 @@ const HomePage = () => {
           <motion.div
             whileInView={{ scale: [0.98, 1] }}
             viewport={{ once: true }}
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-600 via-indigo-600 to-violet-600 p-10 md:p-14 text-center shadow-glow"
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-600 via-indigo-600 to-violet-600 dark:from-brand-500 dark:via-indigo-500 dark:to-violet-500 p-10 md:p-14 text-center shadow-glow"
           >
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZG9kZCI+PGcgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjA1Ij48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnY0em0wLTMwVjBoLTJ2NGg0djJoLTJ6TTYgMzRWMGgydjRoLTJ6bTMwIDMwVjMwaDJ2MzRoLTR2LTJoMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-40" />
             <Users className="w-12 h-12 text-white/80 mx-auto mb-4" />

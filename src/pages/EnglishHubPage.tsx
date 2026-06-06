@@ -222,7 +222,7 @@ const EnglishHubPage: React.FC = () => {
                 <div className={`w-9 h-9 mx-auto rounded-xl bg-gradient-to-br ${s.color === 'text-violet-600' ? 'from-violet-500 to-purple-600' : s.color === 'text-blue-600' ? 'from-blue-500 to-cyan-500' : s.color === 'text-rose-600' ? 'from-rose-500 to-pink-500' : s.color === 'text-amber-600' ? 'from-amber-500 to-orange-500' : s.color === 'text-teal-600' ? 'from-teal-500 to-emerald-500' : s.color === 'text-indigo-600' ? 'from-indigo-500 to-violet-500' : 'from-emerald-500 to-green-600'} flex items-center justify-center mb-2`}>
                   <Icon className="w-4 h-4 text-white" />
                 </div>
-                <p className="text-xs font-bold mb-1">{s.label}</p>
+                <p className="text-xs font-bold mb-1 dark:text-slate-200">{s.label}</p>
                 {score > 0 ? (
                   <div className="flex items-center justify-center gap-0.5">
                     <div className="h-1 flex-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -234,7 +234,7 @@ const EnglishHubPage: React.FC = () => {
                     <span className="text-[9px] text-slate-400">{score}</span>
                   </div>
                 ) : (
-                  <p className="text-[9px] text-slate-400">Bắt đầu</p>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500">Bắt đầu</p>
                 )}
               </motion.button>
             );
