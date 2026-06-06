@@ -290,46 +290,46 @@ const ExamPage: React.FC = () => {
 
         {/* ── EXAM TAB ── */}
         {activeTab === 'exam' && (
-
-        {submitted && score !== null && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6 mb-6 text-center">
-            <p className="text-4xl font-extrabold text-brand-600">
-              {score}/{questions.length}
-            </p>
-            <p className="text-slate-500 mt-2">
-              Điểm /10: {scoreOutOf10 ?? Math.round((score / questions.length) * 10 * 10) / 10}
-            </p>
-            {analysis && (
-              <div className="mt-4 text-left bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-sm">
-                <p className="font-semibold mb-2">Phân tích đề thi:</p>
-                <p className="text-slate-700 dark:text-slate-300 mb-3">{analysis.summary}</p>
-                {analysis.recommendReview.length > 0 && (
-                  <p className="text-slate-600 dark:text-slate-400">
-                    <span className="font-semibold">Nên ôn tập:</span>{' '}
-                    {analysis.recommendReview.join(', ')}
-                  </p>
-                )}
-                {analysis.breakdown.length > 0 && (
-                  <div className="mt-3 space-y-1">
-                    {analysis.breakdown.slice(0, 5).map((b) => (
-                      <div key={b.id} className="flex items-center gap-2">
-                        <div className="flex-1 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                          <div className="h-full bg-brand-500 rounded-full" style={{ width: `${b.percent}%` }} />
-                        </div>
-                        <span className="text-xs text-slate-500 w-24">{b.name}</span>
-                        <span className="text-xs font-semibold text-brand-600">{b.percent}%</span>
+          <>
+            {submitted && score !== null && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6 mb-6 text-center">
+                <p className="text-4xl font-extrabold text-brand-600">
+                  {score}/{questions.length}
+                </p>
+                <p className="text-slate-500 mt-2">
+                  Điểm /10: {scoreOutOf10 ?? Math.round((score / questions.length) * 10 * 10) / 10}
+                </p>
+                {analysis && (
+                  <div className="mt-4 text-left bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-sm">
+                    <p className="font-semibold mb-2">Phân tích đề thi:</p>
+                    <p className="text-slate-700 dark:text-slate-300 mb-3">{analysis.summary}</p>
+                    {analysis.recommendReview.length > 0 && (
+                      <p className="text-slate-600 dark:text-slate-400">
+                        <span className="font-semibold">Nên ôn tập:</span>{' '}
+                        {analysis.recommendReview.join(', ')}
+                      </p>
+                    )}
+                    {analysis.breakdown.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        {analysis.breakdown.slice(0, 5).map((b) => (
+                          <div key={b.id} className="flex items-center gap-2">
+                            <div className="flex-1 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                              <div className="h-full bg-brand-500 rounded-full" style={{ width: `${b.percent}%` }} />
+                            </div>
+                            <span className="text-xs text-slate-500 w-24">{b.name}</span>
+                            <span className="text-xs font-semibold text-brand-600">{b.percent}%</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
-              </div>
+              </motion.div>
             )}
-          </motion.div>
-        )}
 
-        <div className="space-y-6">
-          {!submitted && (
-            <div className="card p-4">
+            <div className="space-y-6">
+              {!submitted && (
+                <div className="card p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold text-slate-500">
                   Câu {currentQ + 1} / {questions.length}
@@ -437,6 +437,8 @@ const ExamPage: React.FC = () => {
             {submitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Đang nộp...</> : <><Send className="w-5 h-5" /> Nộp bài</>}
           </button>
         )}
+        )}
+          </>
         )}
       </div>
     </div>
