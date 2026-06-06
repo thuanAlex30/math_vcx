@@ -327,117 +327,118 @@ const ExamPage: React.FC = () => {
               </motion.div>
             )}
 
-            <div className="space-y-6">
-              {!submitted && (
-                <div className="card p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-slate-500">
-                  Câu {currentQ + 1} / {questions.length}
-                </span>
-                <span className="text-sm text-slate-500">
-                  Đã trả lời: {answers.filter((a) => a !== null).length}
-                </span>
-              </div>
-              <div className="grid grid-cols-10 gap-1">
-                {questions.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setCurrentQ(i)}
-                    className={`h-2 rounded-full transition-all ${
-                      i === currentQ
-                        ? 'bg-brand-500 ring-2 ring-brand-300'
-                        : answers[i] !== null
+            {!submitted && (
+              <div className="card p-4 mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-slate-500">
+                    Câu {currentQ + 1} / {questions.length}
+                  </span>
+                  <span className="text-sm text-slate-500">
+                    Đã trả lời: {answers.filter((a) => a !== null).length}
+                  </span>
+                </div>
+                <div className="grid grid-cols-10 gap-1 mb-3">
+                  {questions.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setCurrentQ(i)}
+                      className={`h-2 rounded-full transition-all ${
+                        i === currentQ
+                          ? 'bg-brand-500 ring-2 ring-brand-300'
+                          : answers[i] !== null
                           ? 'bg-emerald-400'
                           : 'bg-slate-200 dark:bg-slate-700'
-                    }`}
-                    title={`Câu ${i + 1}${answers[i] !== null ? ' ✓' : ''}`}
-                  />
-                ))}
-              </div>
-              <div className="flex items-center justify-between mt-3">
-                <button
-                  type="button"
-                  onClick={() => setCurrentQ((q) => Math.max(0, q - 1))}
-                  disabled={currentQ === 0}
-                  className="flex items-center gap-1 text-sm text-slate-500 hover:text-brand-600 disabled:opacity-30"
-                >
-                  <ChevronLeft className="w-4 h-4" /> Câu trước
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCurrentQ((q) => Math.min(questions.length - 1, q + 1))}
-                  disabled={currentQ === questions.length - 1}
-                  className="flex items-center gap-1 text-sm text-slate-500 hover:text-brand-600 disabled:opacity-30"
-                >
-                  Câu sau <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {questions.map((q, i) => {
-            const visible = submitted || i === currentQ;
-            if (!visible) return null;
-            return (
-            <div key={q.id ?? i} className={`card p-5 ${i === currentQ && !submitted ? 'ring-2 ring-brand-300' : ''}`}>
-              <p className="font-semibold mb-3">
-                Câu {i + 1}. <MathContent text={q.question} />
-              </p>
-              <div className="space-y-2">
-                {q.options.map((opt, oi) => (
-                  <label
-                    key={oi}
-                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer ${
-                      submitted
-                        ? oi === q.correct
-                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30'
-                          : answers[i] === oi
-                            ? 'border-red-400 bg-red-50 dark:bg-red-950/30'
-                            : 'border-slate-200 dark:border-slate-700'
-                        : answers[i] === oi
-                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30'
-                          : 'border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name={`q-${i}`}
-                      checked={answers[i] === oi}
-                      onChange={() => {
-                        if (submitted) return;
-                        const next = [...answers];
-                        next[i] = oi;
-                        setAnswers(next);
-                      }}
-                      disabled={submitted}
-                      className="mt-1 accent-brand-600"
+                      }`}
+                      title={`Câu ${i + 1}${answers[i] !== null ? ' ✓' : ''}`}
                     />
-                    <MathContent text={opt} />
-                  </label>
-                ))}
-              </div>
-              {submitted && q.explanation && (
-                <div className="mt-3 text-sm text-slate-500">
-                  <MathContent text={q.explanation} />
+                  ))}
                 </div>
-              )}
-            </div>
-            );
-          })}
-        </div>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentQ((q) => Math.max(0, q - 1))}
+                    disabled={currentQ === 0}
+                    className="flex items-center gap-1 text-sm text-slate-500 hover:text-brand-600 disabled:opacity-30"
+                  >
+                    <ChevronLeft className="w-4 h-4" /> Câu trước
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentQ((q) => Math.min(questions.length - 1, q + 1))}
+                    disabled={currentQ === questions.length - 1}
+                    className="flex items-center gap-1 text-sm text-slate-500 hover:text-brand-600 disabled:opacity-30"
+                  >
+                    Câu sau <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
 
-        {!submitted && (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="btn-primary w-full mt-8 flex items-center justify-center gap-2 py-4 disabled:opacity-60"
-          >
-            {submitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Đang nộp...</> : <><Send className="w-5 h-5" /> Nộp bài</>}
-          </button>
-        )}
-        )}
+            {questions.map((q, i) => {
+              const visible = submitted || i === currentQ;
+              if (!visible) return null;
+              return (
+                <div key={q.id ?? i} className={`card p-5 mb-4 ${i === currentQ && !submitted ? 'ring-2 ring-brand-300' : ''}`}>
+                  <p className="font-semibold mb-3">
+                    Câu {i + 1}. <MathContent text={q.question} />
+                  </p>
+                  <div className="space-y-2">
+                    {q.options.map((opt, oi) => (
+                      <label
+                        key={oi}
+                        className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer ${
+                          submitted
+                            ? oi === q.correct
+                              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30'
+                              : answers[i] === oi
+                              ? 'border-red-400 bg-red-50 dark:bg-red-950/30'
+                              : 'border-slate-200 dark:border-slate-700'
+                            : answers[i] === oi
+                            ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30'
+                            : 'border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name={`q-${i}`}
+                          checked={answers[i] === oi}
+                          onChange={() => {
+                            if (submitted) return;
+                            const next = [...answers];
+                            next[i] = oi;
+                            setAnswers(next);
+                          }}
+                          disabled={submitted}
+                          className="mt-1 accent-brand-600"
+                        />
+                        <MathContent text={opt} />
+                      </label>
+                    ))}
+                  </div>
+                  {submitted && q.explanation && (
+                    <div className="mt-3 text-sm text-slate-500">
+                      <MathContent text={q.explanation} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {!submitted && (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="btn-primary w-full mt-4 flex items-center justify-center gap-2 py-4 disabled:opacity-60"
+              >
+                {submitting ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Đang nộp...</>
+                ) : (
+                  <><Send className="w-5 h-5" /> Nộp bài</>
+                )}
+              </button>
+            )}
           </>
         )}
       </div>
