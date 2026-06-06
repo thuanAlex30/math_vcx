@@ -33,6 +33,8 @@ const GrammarModule: React.FC = () => {
   const [exercisesGraded, setExercisesGraded] = useState<boolean[]>([]);
   // Cache: lưu explanation đã tải trước đó
   const cacheRef = useRef<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
+  const { level, addXp } = useEnglishStore();
   const topicInfoRef = useRef<GrammarTopic | null>(null);
 
   useEffect(() => {

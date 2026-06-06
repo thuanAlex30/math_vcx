@@ -107,7 +107,7 @@ const SpeakingPracticeModule: React.FC = () => {
       const scoreResult: ScoreResult = {
         score: res.score ?? 0,
         feedback: res.feedback ?? '',
-        issues: res.issues ?? [],
+        issues: res.tips ?? [],
       };
       setResult(scoreResult);
       setAttempts((a) => a + 1);

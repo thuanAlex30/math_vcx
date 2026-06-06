@@ -328,10 +328,10 @@ const VocabModule: React.FC = () => {
           {/* SM-2 quality buttons */}
           <div className="flex justify-center gap-2">
             {([
-              { label: 'Lại', qi: 0 as 0 | 1 | 2, color: 'text-red-500 border-red-200 hover:bg-red-50', next: 'Ngày mai' },
-              { label: 'Vừa', qi: 1 as 0 | 1 | 2, color: 'text-amber-600 border-amber-200 hover:bg-amber-50', next: '3 ngày' },
-              { label: 'Dễ', qi: 2 as 0 | 1 | 2, color: 'text-emerald-600 border-emerald-200 hover:bg-emerald-50', next: '7 ngày' },
-            ] as const).map(({ label, qi, color, next }) => (
+              { label: 'Lại', qi: 0 as 0 | 1 | 2, color: 'text-red-500 border-red-200 hover:bg-red-50', nextLabel: 'Ngày mai' },
+              { label: 'Vừa', qi: 1 as 0 | 1 | 2, color: 'text-amber-600 border-amber-200 hover:bg-amber-50', nextLabel: '3 ngày' },
+              { label: 'Dễ', qi: 2 as 0 | 1 | 2, color: 'text-emerald-600 border-emerald-200 hover:bg-emerald-50', nextLabel: '7 ngày' },
+            ] as const).map(({ label, qi, color, nextLabel }) => (
               <button
                 key={label}
                 type="button"
@@ -339,12 +339,11 @@ const VocabModule: React.FC = () => {
                   reviewCard(`${topicId}-${card.word}`, qi);
                   recordReview(qi);
                   recordWordLearned();
-                  next();
                 }}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border ${color} dark:border-slate-600 dark:hover:bg-slate-800`}
               >
                 <span className="block">{label}</span>
-                <span className="block text-[10px] font-normal opacity-60">{next}</span>
+                <span className="block text-[10px] font-normal opacity-60">{nextLabel}</span>
               </button>
             ))}
           </div>
