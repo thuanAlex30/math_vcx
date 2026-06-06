@@ -109,21 +109,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         isLoading: false,
         error: null,
       });
-      // Sync English stats from MongoDB → localStorage
-      try {
-        const stats = await fetchEnglishStatsMe();
-        useEnglishStore.getState().restoreFromBackend(stats);
-      } catch {
-        useEnglishStore.getState().restoreFromBackend({
-          xp: 0, streak: 0, lastStudyDate: null, wordsLearned: 0,
-          pronunciationScore: 0, listeningScore: 0, writingScore: 0,
-          weeklyProgress: [0, 0, 0, 0, 0, 0, 0],
-        });
-      }
-      // Sync English stats from MongoDB → localStorage
       useEnglishStore.getState().restoreFromBackend(data.user.englishStats || {
         xp: 0, streak: 0, lastStudyDate: null, wordsLearned: 0,
-        pronunciationScore: 0, listeningScore: 0, writingScore: 0,
+        pronunciationScore: 0, listeningScore: 0, readingScore: 0,
+        grammarScore: 0, chatScore: 0, writingScore: 0,
         weeklyProgress: [0, 0, 0, 0, 0, 0, 0],
       });
     } catch {

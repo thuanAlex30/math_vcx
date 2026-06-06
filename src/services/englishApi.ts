@@ -197,6 +197,9 @@ export interface EnglishStatsPayload {
   wordsLearned?: number;
   pronunciationScore?: number;
   listeningScore?: number;
+  readingScore?: number;
+  grammarScore?: number;
+  chatScore?: number;
   writingScore?: number;
   totalStudyMinutes?: number;
   weeklyProgress?: number[];

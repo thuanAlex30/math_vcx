@@ -43,19 +43,25 @@ const ListeningModule: React.FC = () => {
 
   const submit = async () => {
     if (!lesson) return;
+    const unanswered = lesson.questions.findIndex((_, i) => answers[i] == null);
+    if (unanswered !== -1) {
+      toast.error(`Chưa trả lời câu ${unanswered + 1}`);
+      return;
+    }
     try {
-      const res = await gradeListening(lesson.questions, answers);
+      const res = await gradeListening(lesson.questions, answers.filter((a) => a != null));
       setGraded(res);
       updateScores({ listening: res.score });
       addXp(Math.round(res.score / 2));
+      const currentLevel = effectiveLevel();
       const suggestion = recordAdaptiveScore(res.score);
       if (suggestion === 'up') {
-        const next = level === 'beginner' ? 'intermediate' : 'advanced';
+        const next = currentLevel === 'beginner' ? 'intermediate' : 'advanced';
         toast.success('Làm tốt lắm! Thử mức khó hơn nhé 🚀');
         setAdaptiveLevel(next);
       } else if (suggestion === 'down') {
         toast('Ôn lại mức dễ hơn sẽ giúp em vững hơn 📘');
-        const prev = level === 'advanced' ? 'intermediate' : 'beginner';
+        const prev = currentLevel === 'advanced' ? 'intermediate' : 'beginner';
         setAdaptiveLevel(prev);
       }
     } catch {

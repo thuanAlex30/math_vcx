@@ -230,7 +230,8 @@ const TutorPage: React.FC = () => {
     setChatLoading(true);
     useLearningStyleStore.getState().recordUsage('chat');
     try {
-      const msgs = [...chatMessages, { role: 'user' as const, content: text }];
+      // Dùng getState() tránh stale closure — chatMessages được đọc tại thời điểm gọi
+      const msgs = [...useTutorStore.getState().chatMessages, { role: 'user' as const, content: text }];
       const { reply } = await sendChat(msgs, { question, solution }, {
         tutorPersona,
         grade,
@@ -577,7 +578,7 @@ const TutorPage: React.FC = () => {
                 <ChatPanel
                   messages={chatMessages}
                   onSend={handleChat}
-                  disabled={!solution && solveMode === 'full'}
+                  disabled={(!solution && solveMode === 'full') || chatLoading}
                   isTyping={chatLoading}
                   tutorPersona={tutorPersona}
                   onPersonaChange={setTutorPersona}

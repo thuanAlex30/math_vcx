@@ -35,18 +35,18 @@ export const useDashboardStore = create<DashboardStore>()(
       lastStudyDate: null,
       streakBeforeBreak: 0,
       recordSolve: (topic) => {
-        const today = new Date().toISOString().slice(0, 10);
+        const now = new Date();
+        const today = now.toISOString().slice(0, 10);
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const y = yesterday.toISOString().slice(0, 10);
         const state = get();
         let streak = state.streak;
         let streakBeforeBreak = state.streakBeforeBreak;
         if (state.lastStudyDate !== today) {
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const y = yesterday.toISOString().slice(0, 10);
           if (state.lastStudyDate === y) {
             streak = streak + 1;
           } else {
-            // Bỏ lỡ ít nhất 1 ngày — lưu chuỗi cũ để cứu
             if (state.streak > 0 && state.lastStudyDate) {
               streakBeforeBreak = state.streak;
             }

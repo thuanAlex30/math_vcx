@@ -11,6 +11,7 @@ import type { VocabWord } from '../../types/english';
 import LoadingSkeleton from '../LoadingSkeleton';
 
 const EXTRA_STORAGE_KEY = 'english-vocab-extra';
+const IDX_STORAGE_KEY = 'english-vocab-idx';
 
 function storageKey(grade: number, topicId: string) {
   return `${EXTRA_STORAGE_KEY}-${grade}-${topicId}`;
@@ -27,6 +28,19 @@ function loadExtraWords(grade: number, topicId: string): VocabWord[] {
 
 function saveExtraWords(grade: number, topicId: string, words: VocabWord[]) {
   localStorage.setItem(storageKey(grade, topicId), JSON.stringify(words));
+}
+
+function loadIdx(grade: number, topicId: string): number {
+  try {
+    const raw = localStorage.getItem(`${IDX_STORAGE_KEY}-${grade}-${topicId}`);
+    return raw ? (JSON.parse(raw) as number) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveIdx(grade: number, topicId: string, idx: number) {
+  localStorage.setItem(`${IDX_STORAGE_KEY}-${grade}-${topicId}`, JSON.stringify(idx));
 }
 
 function mergeUniqueWords(base: VocabWord[], extra: VocabWord[]): VocabWord[] {
@@ -47,7 +61,7 @@ const VocabModule: React.FC = () => {
   const [topicId, setTopicId] = useState('family');
   const [words, setWords] = useState<VocabWord[]>([]);
   const [difficulty, setDifficulty] = useState('');
-  const [idx, setIdx] = useState(0);
+  const [idx, setIdx] = useState(() => loadIdx(grade as Grade, topicId));
   const [flipped, setFlipped] = useState(false);
   const [expanding, setExpanding] = useState(false);
   const [loadingTopics, setLoadingTopics] = useState(true);
@@ -66,12 +80,13 @@ const VocabModule: React.FC = () => {
       const merged = mergeUniqueWords(topic.words, saved);
       setWords(merged);
       setDifficulty(topic.difficulty ?? '');
+      // Khôi phục idx đã lưu — không reset về 0
+      setIdx(loadIdx(g, topicId));
+      setFlipped(false);
     } catch {
       toast.error('Không tải được từ vựng');
       setWords([]);
     } finally {
-      setIdx(0);
-      setFlipped(false);
       setLoadingWords(false);
     }
   }, [grade, topicId]);
@@ -126,24 +141,46 @@ const VocabModule: React.FC = () => {
 
   const card = displayWords[idx] || words[idx];
 
+  const safeLen = displayWords.length || words.length || 1;
+
   const next = () => {
     setFlipped(false);
     if (card?.word) {
       addCard({ wordId: `${topicId}-${card.word}`, word: card.word, topicId });
     }
-    setIdx((i) => (i + 1) % (displayWords.length || words.length || 1));
+    const nextIdx = (idx + 1) % safeLen;
+    setIdx(nextIdx);
+    saveIdx(grade as Grade, topicId, nextIdx);
     recordWordLearned();
   };
 
   const prev = () => {
     setFlipped(false);
-    setIdx((i) => (i - 1 + words.length) % words.length);
+    const prevIdx = (idx - 1 + safeLen) % safeLen;
+    setIdx(prevIdx);
+    saveIdx(grade as Grade, topicId, prevIdx);
   };
 
   if (loadingTopics || loadingWords) return <div className="max-w-md mx-auto"><LoadingSkeleton /></div>;
 
   if (!card || topics.length === 0) {
     return <p className="text-slate-500 text-center py-12">Không có từ vựng cho lớp này</p>;
+  }
+
+  if (vocabTab === 'review' && displayWords.length === 0) {
+    return (
+      <div className="text-center py-16 space-y-3">
+        <span className="text-5xl">🎉</span>
+        <p className="text-slate-500 font-medium">Không có từ nào cần ôn hôm nay!</p>
+        <button
+          type="button"
+          onClick={() => { setVocabTab('new'); setIdx(0); setFlipped(false); }}
+          className="chip ring-2 ring-emerald-500"
+        >
+          Học từ mới
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -258,8 +295,10 @@ const VocabModule: React.FC = () => {
               key={label}
               type="button"
               onClick={() => {
+                // reviewCard: cập nhật SRS schedule
                 reviewCard(`${topicId}-${card.word}`, qi as 0 | 1 | 2);
-                addXp(qi === 2 ? 15 : qi === 1 ? 10 : 5);
+                // recordWordLearned: +1 wordsLearned + checkBadgeUnlock + addXp(10)
+                // -> KHÔNG addXp thêm ở đây (tránh double XP)
                 next();
               }}
               className="flex-1 py-2 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"

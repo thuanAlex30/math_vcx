@@ -73,13 +73,30 @@ export const solveMathStream = async (
   onToken: (token: string) => void,
   onDone?: (payload: SolveResult & { done: true; topicId?: string; mode?: string }) => void
 ): Promise<void> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120_000);
+
   const response = await fetch(`${API_BASE_URL}/solve-stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
+    signal: controller.signal,
   });
 
-  if (!response.ok) throw new Error('Stream failed');
+  clearTimeout(timeout);
+
+  if (!response.ok) {
+    let msg = 'Stream failed';
+    try {
+      const clone = response.body ? response.clone() : null;
+      if (clone) {
+        const text = await clone.text();
+        const parsed = JSON.parse(text);
+        msg = parsed.error || parsed.hint || msg;
+      }
+    } catch { /* ignore */ }
+    throw new Error(msg);
+  }
 
   const reader = response.body?.getReader();
   const decoder = new TextDecoder();
@@ -100,11 +117,12 @@ export const solveMathStream = async (
         if (parsed.token) onToken(parsed.token);
         if (parsed.error) {
           const msg = parsed.hint ? `${parsed.error} — ${parsed.hint}` : parsed.error;
-          throw new Error(msg);
+          throw Object.assign(new Error(msg), { isStreamError: true });
         }
         if (parsed.done) onDone?.(parsed);
       } catch (e) {
         if (e instanceof SyntaxError) continue;
+        if (e instanceof Error && e.message === 'The user aborted a request.') return;
         throw e;
       }
     }

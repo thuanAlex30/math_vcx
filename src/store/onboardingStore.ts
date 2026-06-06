@@ -22,6 +22,11 @@ interface OnboardingStore {
   resetOnboarding: () => void;
 }
 
+const VALID_GOALS = ['on_grade', 'thpt', 'english_exam', 'daily_practice'];
+const VALID_STYLES = ['read', 'tts', 'graph', 'chat'];
+const VALID_MINUTES = [15, 30, 45, 60];
+const VALID_SLOTS = ['morning', 'afternoon', 'evening', 'weekend'];
+
 export const useOnboardingStore = create<OnboardingStore>()(
   persist(
     (set) => ({
@@ -32,7 +37,22 @@ export const useOnboardingStore = create<OnboardingStore>()(
       dailyMinutes: 30,
       preferredStyle: 'read',
       completeOnboarding: (data) =>
-        set({ ...data, completed: true }),
+        set({
+          ...data,
+          goals: Array.isArray(data.goals)
+            ? data.goals.filter((g): g is LearningGoal => VALID_GOALS.includes(g))
+            : ['on_grade'],
+          studySlots: Array.isArray(data.studySlots)
+            ? data.studySlots.filter((s): s is StudyTimeSlot => VALID_SLOTS.includes(s))
+            : ['evening'],
+          dailyMinutes: VALID_MINUTES.includes(data.dailyMinutes as number)
+            ? (data.dailyMinutes as 15 | 30 | 45 | 60)
+            : 30,
+          preferredStyle: VALID_STYLES.includes(data.preferredStyle as string)
+            ? (data.preferredStyle as PreferredStyle)
+            : 'read',
+          completed: true,
+        }),
       resetOnboarding: () =>
         set({
           completed: false,

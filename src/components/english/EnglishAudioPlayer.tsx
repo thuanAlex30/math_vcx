@@ -45,6 +45,12 @@ const EnglishAudioPlayer: React.FC<EnglishAudioPlayerProps> = ({
       stop();
       return;
     }
+    // Cleanup audio cũ trước khi tạo mới — tránh memory leak
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+      audioRef.current = null;
+    }
     setLoading(true);
     try {
       const result = await englishTts(text, speed);

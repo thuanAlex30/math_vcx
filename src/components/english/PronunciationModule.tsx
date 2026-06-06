@@ -29,6 +29,13 @@ const PronunciationModule: React.FC = () => {
     setUnitId('');
   }, [grade]);
 
+  // Cleanup speech recognition khi component unmount — tránh memory leak
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, []);
+
   useEffect(() => {
     fetchPronunciationPractice(grade as Grade, unitId || undefined)
       .then((p) => {

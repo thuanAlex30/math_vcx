@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import {
   User,
   Edit3,
@@ -64,6 +65,7 @@ const SKILL_ICONS: Record<string, string> = {
 };
 
 const ProfilePage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { name, goals, studySlots, dailyMinutes, preferredStyle } = useOnboardingStore();
   const { xp, streak, badges, wordsLearned, weeklyProgress, pronunciationScore, listeningScore, writingScore, readingScore } = useEnglishStore();
@@ -110,7 +112,7 @@ const ProfilePage: React.FC = () => {
     setLoading(true);
     await logout();
     setShowLogoutModal(false);
-    window.location.href = '/auth';
+    navigate('/auth', { replace: true });
   };
 
   const displayName = useOnboardingStore((s) => s.name);

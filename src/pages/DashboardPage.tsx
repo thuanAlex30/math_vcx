@@ -93,12 +93,14 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     if (
       hasMissedStudyDay(lastStudyDate) &&
-      streak >= 2 &&
-      canUseStreakRescue()
+      streak >= 2
     ) {
-      setShowRescue(true);
+      // Gọi canUseStreakRescue() trong body thay vì deps — tránh re-run khi store thay đổi
+      if (canUseStreakRescue()) {
+        setShowRescue(true);
+      }
     }
-  }, [lastStudyDate, streak, canUseStreakRescue]);
+  }, [lastStudyDate, streak]);
 
   useEffect(() => {
     fetchLeaderboard().then(setLeaderboard).catch(() => {});

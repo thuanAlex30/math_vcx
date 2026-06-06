@@ -107,6 +107,9 @@ export const useEnglishStore = create<EnglishStore>()(
           wordsLearned: stats.wordsLearned,
           pronunciationScore: stats.pronunciationScore,
           listeningScore: stats.listeningScore,
+          readingScore: stats.readingScore,
+          grammarScore: stats.grammarScore,
+          chatScore: stats.chatScore,
           writingScore: stats.writingScore,
           weeklyProgress: stats.weeklyProgress,
         });
@@ -116,11 +119,15 @@ export const useEnglishStore = create<EnglishStore>()(
       pushToBackend: async () => {
         const { user } = useAuthStore.getState();
         if (!user) return;
-        const { xp, streak, lastStudyDate, wordsLearned, pronunciationScore, listeningScore, writingScore, studyMinutes, weeklyProgress } = get();
+        const { xp, streak, lastStudyDate, wordsLearned,
+          pronunciationScore, listeningScore, writingScore,
+          readingScore, grammarScore, chatScore,
+          studyMinutes, weeklyProgress } = get();
         try {
           await syncEnglishStatsFromBackend({
             xp, streak, lastStudyDate,
             wordsLearned, pronunciationScore, listeningScore, writingScore,
+            readingScore, grammarScore, chatScore,
             totalStudyMinutes: studyMinutes,
             weeklyProgress,
           });
@@ -186,15 +193,19 @@ export const useEnglishStore = create<EnglishStore>()(
 
       addXp: (amount) => {
         const state = get();
-        const today = new Date().toISOString().slice(0, 10);
+        // Tính hôm nay và hôm qua từ cùng 1 Date instance — tránh timezone crossing gây reset streak nhầm
+        const now = new Date();
+        const today = now.toISOString().slice(0, 10);
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const y = yesterday.toISOString().slice(0, 10);
+
         let streak = state.streak;
         if (state.lastStudyDate !== today) {
-          const y = new Date();
-          y.setDate(y.getDate() - 1);
-          streak = state.lastStudyDate === y.toISOString().slice(0, 10) ? streak + 1 : 1;
+          streak = state.lastStudyDate === y ? streak + 1 : 1;
         }
         const xp = state.xp + amount;
-        const day = new Date().getDay();
+        const day = now.getDay();
         const weekly = [...state.weeklyProgress];
         weekly[day] = (weekly[day] || 0) + amount;
         set({ xp, streak, lastStudyDate: today, weeklyProgress: weekly });
@@ -236,6 +247,8 @@ export const useEnglishStore = create<EnglishStore>()(
       recordChat: () => {
         set({ chatScore: get().chatScore + 1 });
         get().checkBadgeUnlock();
+        const { user } = useAuthStore.getState();
+        if (user) get().pushToBackend();
       },
     }),
     { name: 'english-progress' }
