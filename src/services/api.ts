@@ -298,9 +298,26 @@ export const generateExam = async (grade: number) => {
 
 export const submitExam = async (
   studentSessionId: string,
-  answers: { topicId?: string; correct: boolean }[]
+  answers: {
+    question?: string;
+    options?: string[];
+    correctAnswer?: number;
+    topicId?: string;
+    topicLabel?: string;
+    userAnswer?: number | null;
+    correct: boolean;
+  }[],
+  grade: number,
+  questions?: PracticeQuestion[],
+  timeSpentSeconds?: number
 ) => {
-  const response = await client.post('/exam/submit', { studentSessionId, answers });
+  const response = await client.post('/exam/submit', {
+    studentSessionId,
+    answers,
+    grade,
+    questions,
+    timeSpentSeconds,
+  });
   return response.data;
 };
 
@@ -310,6 +327,55 @@ export const analyzeExam = async (text: string, grade: number) => {
     summary: string;
     recommendReview: string[];
   }>('/exam/analyze', { text, grade });
+  return response.data;
+};
+
+export const fetchExamHistory = async (limit = 20) => {
+  const response = await client.get<{
+    submissions: {
+      id: string;
+      type: string;
+      grade: number;
+      date: string;
+      score: number;
+      totalQuestions: number;
+      scoreOutOf10: number;
+      durationMinutes: number;
+      timeSpentSeconds: number | null;
+      createdAt: string;
+    }[];
+  }>('/exam/history', { params: { limit } });
+  return response.data;
+};
+
+export const fetchExamDetail = async (id: string) => {
+  const response = await client.get<{
+    id: string;
+    type: string;
+    grade: number;
+    date: string;
+    score: number;
+    totalQuestions: number;
+    scoreOutOf10: number;
+    durationMinutes: number;
+    timeSpentSeconds: number | null;
+    analysis: {
+      breakdown: { id: string; name: string; percent: number }[];
+      summary: string;
+      recommendReview: string[];
+    } | null;
+    questions: {
+      questionNumber: number;
+      question: string;
+      options: string[];
+      userAnswer: number | null;
+      correctAnswer: number | null;
+      isCorrect: boolean;
+      topicId: string | null;
+      topicLabel: string | null;
+    }[];
+    createdAt: string;
+  }>(`/exam/history/${id}`);
   return response.data;
 };
 

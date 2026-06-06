@@ -29,6 +29,7 @@ import { useHistoryStore } from '../store/historyStore';
 import { useLearningStyleStore } from '../store/learningStyleStore';
 import ConfirmModal from '../components/ConfirmModal';
 import LoadingSkeleton from '../components/LoadingSkeleton';
+import ThemeSelector from '../components/ThemeSelector';
 
 const GOAL_LABELS: Record<string, string> = {
   on_grade: 'Ôn theo chương trình lớp',
@@ -315,6 +316,8 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+            {/* Theme & appearance */}
+            <ThemeSelector className="mb-4" />
             <p className="text-xs font-semibold text-slate-500 mb-2">Cài đặt</p>
             <div className="flex flex-wrap gap-3 text-sm">
               <label className="flex items-center gap-2 cursor-pointer">

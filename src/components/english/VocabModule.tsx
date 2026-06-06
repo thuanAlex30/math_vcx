@@ -12,6 +12,8 @@ import LoadingSkeleton from '../LoadingSkeleton';
 
 const EXTRA_STORAGE_KEY = 'english-vocab-extra';
 const IDX_STORAGE_KEY = 'english-vocab-idx';
+const REVIEW_TODAY_KEY = 'english-vocab-reviewed-today';
+const REVIEW_DATE_KEY = 'english-vocab-review-date';
 
 function storageKey(grade: number, topicId: string) {
   return `${EXTRA_STORAGE_KEY}-${grade}-${topicId}`;
@@ -70,6 +72,22 @@ const VocabModule: React.FC = () => {
   const { recordWordLearned, addXp } = useEnglishStore();
   const { addCard, reviewCard, getDueCount, getDueCards } = useVocabSrsStore();
   const dueCount = getDueCount();
+
+  const today = new Date().toISOString().slice(0, 10);
+  const reviewDateKey = `${REVIEW_DATE_KEY}-${grade}-${topicId}`;
+  const [reviewedToday, setReviewedToday] = useState(() => {
+    try {
+      const savedDate = localStorage.getItem(reviewDateKey);
+      return savedDate === today ? JSON.parse(localStorage.getItem(`${REVIEW_TODAY_KEY}-${grade}-${topicId}`) || '0') : 0;
+    } catch { return 0; }
+  });
+
+  const recordReview = (quality: 0 | 1 | 2) => {
+    const next = reviewedToday + 1;
+    setReviewedToday(next);
+    localStorage.setItem(reviewDateKey, today);
+    localStorage.setItem(`${REVIEW_TODAY_KEY}-${grade}-${topicId}`, JSON.stringify(next));
+  };
 
   const loadTopic = useCallback(async () => {
     setLoadingWords(true);
@@ -143,15 +161,17 @@ const VocabModule: React.FC = () => {
 
   const safeLen = displayWords.length || words.length || 1;
 
-  const next = () => {
+  const next = (skipRecord = false) => {
     setFlipped(false);
-    if (card?.word) {
+    if (card?.word && !skipRecord) {
       addCard({ wordId: `${topicId}-${card.word}`, word: card.word, topicId });
     }
     const nextIdx = (idx + 1) % safeLen;
     setIdx(nextIdx);
     saveIdx(grade as Grade, topicId, nextIdx);
-    recordWordLearned();
+    if (!skipRecord) {
+      recordWordLearned();
+    }
   };
 
   const prev = () => {
@@ -289,23 +309,45 @@ const VocabModule: React.FC = () => {
       </div>
 
       {flipped && card && (
-        <div className="flex justify-center gap-2 mt-4 max-w-md mx-auto">
-          {(['Khó', 'Vừa', 'Dễ'] as const).map((label, qi) => (
-            <button
-              key={label}
-              type="button"
-              onClick={() => {
-                // reviewCard: cập nhật SRS schedule
-                reviewCard(`${topicId}-${card.word}`, qi as 0 | 1 | 2);
-                // recordWordLearned: +1 wordsLearned + checkBadgeUnlock + addXp(10)
-                // -> KHÔNG addXp thêm ở đây (tránh double XP)
-                next();
-              }}
-              className="flex-1 py-2 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-            >
-              {label}
-            </button>
-          ))}
+        <div className="max-w-md mx-auto mt-4">
+          {/* Progress bar */}
+          {displayWords.length > 0 && (
+            <div className="mb-3">
+              <div className="flex justify-between text-xs text-slate-400 mb-1">
+                <span>Đã ôn hôm nay</span>
+                <span>{reviewedToday} / {displayWords.length}</span>
+              </div>
+              <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all"
+                  style={{ width: `${Math.min(100, (reviewedToday / Math.max(displayWords.length, 1)) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+          {/* SM-2 quality buttons */}
+          <div className="flex justify-center gap-2">
+            {([
+              { label: 'Lại', qi: 0 as 0 | 1 | 2, color: 'text-red-500 border-red-200 hover:bg-red-50', next: 'Ngày mai' },
+              { label: 'Vừa', qi: 1 as 0 | 1 | 2, color: 'text-amber-600 border-amber-200 hover:bg-amber-50', next: '3 ngày' },
+              { label: 'Dễ', qi: 2 as 0 | 1 | 2, color: 'text-emerald-600 border-emerald-200 hover:bg-emerald-50', next: '7 ngày' },
+            ] as const).map(({ label, qi, color, next }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => {
+                  reviewCard(`${topicId}-${card.word}`, qi);
+                  recordReview(qi);
+                  recordWordLearned();
+                  next();
+                }}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border ${color} dark:border-slate-600 dark:hover:bg-slate-800`}
+              >
+                <span className="block">{label}</span>
+                <span className="block text-[10px] font-normal opacity-60">{next}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

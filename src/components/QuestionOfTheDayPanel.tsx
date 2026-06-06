@@ -49,7 +49,8 @@ export const QuestionOfTheDayPanel: React.FC = () => {
       const data = await getUserQotDStats();
       setStats(data.stats);
     } catch (error) {
-      console.error('Error loading stats:', error);
+      // User chưa đăng nhập → không hiện stats
+      console.warn('[QotD] chưa đăng nhập, bỏ qua stats');
     }
   };
 

@@ -51,9 +51,13 @@ export const SocialChallengesPanel: React.FC<{ compact?: boolean }> = ({ compact
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
+    if (!user) {
+      setChallenges([]);
+      return;
+    }
     if (activeTab === 'challenges') loadChallenges();
     else loadLeaderboard();
-  }, [activeTab]);
+  }, [activeTab, user]);
 
   const loadChallenges = async () => {
     try {

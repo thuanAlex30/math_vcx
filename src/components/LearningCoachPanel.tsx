@@ -30,7 +30,10 @@ export const LearningCoachPanel: React.FC = () => {
       setCoaching(coachData.coachingMessage);
       setAnalysis(analysisData.analysis);
     } catch (error) {
-      console.error('Error loading coach data:', error);
+      // User chưa đăng nhập hoặc chưa có dữ liệu → im lặng
+      console.warn('[LearningCoach] chưa đăng nhập hoặc không có dữ liệu:', error);
+      setCoaching(null);
+      setAnalysis(null);
     } finally {
       setLoading(false);
     }

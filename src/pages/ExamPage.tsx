@@ -1,18 +1,33 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Clock, Send, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, Send, Loader2, ChevronLeft, ChevronRight, History, Eye } from 'lucide-react';
 import { useGradeStore } from '../store/gradeStore';
 import {
   generateExam,
   submitExam,
   analyzeExam,
+  fetchExamHistory,
+  fetchExamDetail,
   getStudentSessionId,
   type PracticeQuestion,
 } from '../services/api';
 import { MathContent } from '../components/MathContent';
 
 const EXAM_HISTORY_KEY = 'giasu-exam-history';
+
+interface ExamHistoryItem {
+  id: string;
+  type: string;
+  grade: number;
+  date: string;
+  score: number;
+  totalQuestions: number;
+  scoreOutOf10: number;
+  durationMinutes: number;
+  timeSpentSeconds: number | null;
+  createdAt: string;
+}
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -32,16 +47,33 @@ const ExamPage: React.FC = () => {
   const [secondsLeft, setSecondsLeft] = useState(90 * 60);
   const [analysis, setAnalysis] = useState<{ breakdown: { id: string; name: string; percent: number }[]; summary: string; recommendReview: string[] } | null>(null);
   const [currentQ, setCurrentQ] = useState(0);
+  const [activeTab, setActiveTab] = useState<'exam' | 'history' | 'detail'>('exam');
+  const [history, setHistory] = useState<ExamHistoryItem[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [detail, setDetail] = useState<Awaited<ReturnType<typeof fetchExamDetail>>['questions'] extends (infer T)[] ? T[] : never>([]);
+  const [detailMeta, setDetailMeta] = useState<{ score: number; totalQuestions: number; scoreOutOf10: number; date: string } | null>(null);
+  const startTimeRef = React.useRef<number>(Date.now());
 
   useEffect(() => {
     generateExam(grade)
       .then((res) => {
         setQuestions(res.questions);
         setAnswers(new Array(res.questions.length).fill(null));
+        startTimeRef.current = Date.now();
       })
       .catch(() => toast.error('Không tạo được đề thi'))
       .finally(() => setLoading(false));
   }, [grade]);
+
+  useEffect(() => {
+    if (activeTab === 'history') {
+      setLoadingHistory(true);
+      fetchExamHistory(20)
+        .then((res) => setHistory(res.submissions))
+        .catch(() => toast.error('Không tải được lịch sử thi'))
+        .finally(() => setLoadingHistory(false));
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (submitted || loading) return;
@@ -61,24 +93,33 @@ const ExamPage: React.FC = () => {
     if (submitted || submitting) return;
     setSubmitting(true);
     const results = questions.map((q, i) => ({
+      question: q.question,
+      options: q.options,
+      correctAnswer: q.correct,
       topicId: q.topicId,
+      topicLabel: q.topicLabel,
+      userAnswer: answers[i],
       correct: answers[i] === q.correct,
     }));
     const correctCount = results.filter((r) => r.correct).length;
     setScore(correctCount);
     setSubmitted(true);
+    const timeSpentSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
 
     try {
-      const res = await submitExam(getStudentSessionId(), results);
+      const res = await submitExam(getStudentSessionId(), results, grade, questions, timeSpentSeconds);
       setScoreOutOf10(res.scoreOutOf10);
-      const history = JSON.parse(localStorage.getItem(EXAM_HISTORY_KEY) || '[]');
-      history.unshift({
+
+      // Lưu local (cho offline fallback)
+      const localHistory = JSON.parse(localStorage.getItem(EXAM_HISTORY_KEY) || '[]');
+      localHistory.unshift({
+        id: res.submissionId || `local-${Date.now()}`,
         date: new Date().toISOString(),
         score: res.scoreOutOf10,
         correct: correctCount,
         total: questions.length,
       });
-      localStorage.setItem(EXAM_HISTORY_KEY, JSON.stringify(history.slice(0, 20)));
+      localStorage.setItem(EXAM_HISTORY_KEY, JSON.stringify(localHistory.slice(0, 20)));
 
       // Phân tích đề — gợi ý ôn tập
       try {
@@ -89,7 +130,10 @@ const ExamPage: React.FC = () => {
 
       toast.success(`Điểm: ${res.scoreOutOf10}/10`);
     } catch {
-      toast.error('Không lưu được kết quả');
+      // Vẫn hiện điểm tính local
+      const localScore = Math.round((correctCount / questions.length) * 10 * 10) / 10;
+      setScoreOutOf10(localScore);
+      toast.error('Không lưu được kết quả lên server');
     } finally {
       setSubmitting(false);
     }
@@ -109,13 +153,143 @@ const ExamPage: React.FC = () => {
       <div className="max-w-3xl mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-extrabold">Thi thử THPT Toán</h1>
-          {!submitted && (
-            <div className="flex items-center gap-2 font-mono text-lg font-bold text-brand-600">
-              <Clock className="w-5 h-5" />
-              {formatTime(secondsLeft)}
+          <div className="flex items-center gap-2">
+            {!submitted && (
+              <div className="font-mono text-lg font-bold text-brand-600 flex items-center gap-1">
+                <Clock className="w-5 h-5" />
+                {formatTime(secondsLeft)}
+              </div>
+            )}
+            {/* Tab switcher */}
+            <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden text-sm">
+              {([['exam', 'Thi'], ['history', 'Lịch sử']] as const).map(([tab, label]) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab);
+                    if (tab === 'exam') {
+                      setSubmitted(false);
+                      setScore(null);
+                      setScoreOutOf10(null);
+                      setAnalysis(null);
+                      setDetail([]);
+                      setDetailMeta(null);
+                      setLoading(true);
+                      generateExam(grade).then((res) => {
+                        setQuestions(res.questions);
+                        setAnswers(new Array(res.questions.length).fill(null));
+                        startTimeRef.current = Date.now();
+                      }).catch(() => toast.error('Không tạo được đề thi')).finally(() => setLoading(false));
+                    }
+                  }}
+                  className={`px-3 py-1.5 font-semibold transition-colors ${
+                    activeTab === tab
+                      ? 'bg-brand-500 text-white'
+                      : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {tab === 'exam' ? <Clock className="w-4 h-4 inline mr-1" /> : <History className="w-4 h-4 inline mr-1" />}
+                  {label}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
         </div>
+
+        {/* ── HISTORY TAB ── */}
+        {activeTab === 'history' && (
+          <div>
+            {loadingHistory ? (
+              <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-brand-500" /></div>
+            ) : history.length === 0 ? (
+              <div className="text-center py-16 text-slate-500">
+                <History className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>Chưa có bài thi nào.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {history.map((h) => (
+                  <button
+                    key={h.id}
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const d = await fetchExamDetail(h.id);
+                        setDetail(d.questions);
+                        setDetailMeta({ score: d.score, totalQuestions: d.totalQuestions, scoreOutOf10: d.scoreOutOf10, date: d.date });
+                        setActiveTab('detail');
+                      } catch {
+                        toast.error('Không tải được chi tiết');
+                      }
+                    }}
+                    className="card w-full p-4 flex items-center justify-between hover:shadow-md transition-shadow text-left"
+                  >
+                    <div>
+                      <p className="font-semibold text-slate-800 dark:text-slate-100">
+                        {new Date(h.createdAt).toLocaleDateString('vi-VN')}
+                      </p>
+                      <p className="text-sm text-slate-500">Lớp {h.grade} · {h.totalQuestions} câu</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl font-extrabold text-brand-600">{h.scoreOutOf10}/10</span>
+                      <Eye className="w-5 h-5 text-slate-400" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── DETAIL TAB ── */}
+        {activeTab === 'detail' && detail.length > 0 && detailMeta && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm text-slate-500">{detailMeta.date}</p>
+                <p className="text-xl font-extrabold text-brand-600">
+                  {detailMeta.scoreOutOf10}/10
+                  <span className="text-base font-normal text-slate-400 ml-2">
+                    ({detailMeta.score}/{detailMeta.totalQuestions} đúng)
+                  </span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('history')}
+                className="flex items-center gap-1 text-sm text-brand-600 hover:underline"
+              >
+                <ChevronLeft className="w-4 h-4" /> Quay lại
+              </button>
+            </div>
+            <div className="space-y-4">
+              {detail.map((q) => (
+                <div key={q.questionNumber} className={`card p-4 border-l-4 ${
+                  q.isCorrect ? 'border-emerald-500' : 'border-red-400'
+                }`}>
+                  <p className="font-semibold mb-2 text-sm">
+                    Câu {q.questionNumber}.
+                    {q.isCorrect ? (
+                      <span className="ml-2 text-emerald-600 text-xs">✓ Đúng</span>
+                    ) : (
+                      <span className="ml-2 text-red-500 text-xs">
+                        ✗ Sai — Đáp án: {String.fromCharCode(65 + (q.correctAnswer ?? 0))}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 mb-2"><MathContent text={q.question} /></p>
+                  {q.topicLabel && (
+                    <span className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-500">{q.topicLabel}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── EXAM TAB ── */}
+        {activeTab === 'exam' && (
 
         {submitted && score !== null && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6 mb-6 text-center">
@@ -262,6 +436,7 @@ const ExamPage: React.FC = () => {
           >
             {submitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Đang nộp...</> : <><Send className="w-5 h-5" /> Nộp bài</>}
           </button>
+        )}
         )}
       </div>
     </div>

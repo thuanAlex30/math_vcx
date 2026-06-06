@@ -14,6 +14,7 @@ import {
   TrendingUp,
   Lock,
   ChevronRight,
+  Mic2,
 } from 'lucide-react';
 import { useEnglishStore, levelFromXp } from '../store/englishStore';
 import VocabModule from '../components/english/VocabModule';
@@ -23,6 +24,7 @@ import ListeningModule from '../components/english/ListeningModule';
 import ReadingModule from '../components/english/ReadingModule';
 import WritingModule from '../components/english/WritingModule';
 import EnglishChatModule from '../components/english/EnglishChatModule';
+import SpeakingPracticeModule from '../components/english/SpeakingPracticeModule';
 import type { EnglishSkill } from '../types/english';
 import GradeSubjectSelector from '../components/GradeSubjectSelector';
 import { useGradeStore } from '../store/gradeStore';
@@ -34,6 +36,7 @@ const SKILLS: { id: EnglishSkill; label: string; icon: typeof BookOpen; color: s
   { id: 'listening', label: 'Nghe', icon: Headphones, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-800' },
   { id: 'reading', label: 'Đọc', icon: BookOpen, color: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-950/30', border: 'border-teal-200 dark:border-teal-800' },
   { id: 'writing', label: 'Viết', icon: PenLine, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-950/30', border: 'border-indigo-200 dark:border-indigo-800' },
+  { id: 'speaking', label: 'Nói', icon: Mic2, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-200 dark:border-orange-800' },
   { id: 'chat', label: 'Hội thoại', icon: MessageCircle, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-200 dark:border-emerald-800' },
 ];
 
@@ -63,6 +66,7 @@ const EnglishHubPage: React.FC = () => {
       case 'listening': return <ListeningModule key={key} />;
       case 'reading': return <ReadingModule key={key} />;
       case 'writing': return <WritingModule key={key} />;
+      case 'speaking': return <SpeakingPracticeModule key={key} />;
       case 'chat': return <EnglishChatModule key={key} />;
       default: return null;
     }

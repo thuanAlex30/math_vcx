@@ -7,7 +7,8 @@ export type EnglishSkill =
   | 'listening'
   | 'reading'
   | 'writing'
-  | 'chat';
+  | 'chat'
+  | 'speaking';
 
 export type EnglishGrade = 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
