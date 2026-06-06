@@ -330,7 +330,7 @@ const GrammarModule: React.FC = () => {
                             );
                           })}
                         </div>
-                        {isGraded && exerciseAnswers[i] != null && (
+                        {exercisesGraded[i] && exerciseAnswers[i] != null && (
                           <div className={`flex items-start gap-2 text-sm px-3 py-2 rounded-lg ${
                             exerciseAnswers[i] === ex.correct
                               ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700'

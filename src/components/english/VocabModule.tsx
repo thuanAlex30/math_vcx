@@ -357,7 +357,7 @@ const VocabModule: React.FC = () => {
         <span className="text-sm font-medium text-slate-500">
           {idx + 1} / {displayWords.length || words.length}
         </span>
-        <button type="button" onClick={next} className="p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+        <button type="button" onClick={() => next()} className="p-3 rounded-xl border border-slate-200 dark:border-slate-700">
           <ChevronRight />
         </button>
         <button
